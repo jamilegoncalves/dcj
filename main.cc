@@ -11,7 +11,6 @@ int main(int argc, char *argv[])
         a1->genes.push_back(3);
  */
         
-        a1->genes.push_back(0);
 	a1->genes.push_back(1);
 	a1->genes.push_back(3);
 	a1->genes.push_back(-4);

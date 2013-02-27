@@ -8,9 +8,12 @@ AdjacencyGraph::AdjacencyGraph(Genome *a, Genome *b)
 
     vertex = new Vertex[2*n + 1];
 
+    adjA = adjB = NULL; // DEBUG
+
     constructTables(a, adjA, locA);
     constructTables(b, adjB, locB);
 
+    // TODO: tirar estas constantes
     adjA[10].first = 0;
     adjB[9].first = 0;
     
@@ -29,23 +32,49 @@ AdjacencyGraph::AdjacencyGraph(Genome *a, Genome *b)
             vertex[i].vertex2 = locB[- adjA[i].second].head;
     }
     
-    for(int i = 1; i <= 15; ++i)
-    {
-        std::cerr << "AdjA["<<i<<"].first: "<< adjA[i].first << std::endl;
-        std::cerr << "AdjA["<<i<<"].second: "<< adjA[i].second << std::endl;
-    }
-    
-    for(int i = 1; i <= 14; ++i)
-    {
-        std::cerr << "AdjB["<<i<<"].first: "<< adjB[i].first << std::endl;
-        std::cerr << "AdjB["<<i<<"].second: "<< adjB[i].second << std::endl;
-    }
 }
 
 AdjacencyGraph::~AdjacencyGraph()
 {
     delete vertex;
     delete adjA, adjB, locA, locB;
+}
+
+void AdjacencyGraph::print()
+{
+    printAdjacencies(std::cerr);
+}
+
+void AdjacencyGraph::printAdjacencies(std::ostream &os)
+{
+    if ( adjA != NULL )
+    {
+        os << "AdjA:" << std::endl;
+        os << "first:";
+        for(int i = 1; i <= 15; ++i)
+            os << "\t" << adjA[i].first;
+        os << std::endl;
+
+        os << "second:";
+        for(int i = 1; i <= 15; ++i)
+            os << "\t" << adjA[i].second;
+        os << std::endl;
+    }
+
+    if ( adjB != NULL )
+    {
+        os << std::endl;
+        os << "AdjB:" << std::endl;
+        os << "first:";
+        for(int i = 1; i <= 15; ++i)
+            os << "\t" << adjB[i].first;
+        os << std::endl;
+
+        os << "second:";
+        for(int i = 1; i <= 15; ++i)
+            os << "\t" << adjB[i].second;
+        os << std::endl;
+    }
 }
 
 int AdjacencyGraph::sortByDCJ()
@@ -75,10 +104,10 @@ void AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
         {
             adj[offset + 1].first = chr->genes[1];
             adj[offset + 1].second = 0;
-            adj[offset + chr->genes.size() +1].first = - chr->genes[chr->genes.size()];
-            adj[offset + chr->genes.size() +1].second = 0;
+            adj[offset + chr->length() +1].first = - chr->genes[chr->length()];
+            adj[offset + chr->length() +1].second = 0;
             
-            for(int i = 2; i <= chr->genes.size(); ++i)
+            for(int i = 2; i <= chr->length(); ++i)
             {
                 adj[offset + i].first = - chr->genes[i-1];
                 adj[offset + i].second = chr->genes[i];
@@ -86,18 +115,19 @@ void AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
         }
         else // if it's a circular chromosome
         {
-            if(chr->genes.size() == 1)
+            if(chr->length() == 1)
             {
                 adj[offset + 1].first = chr->genes[1];
                 adj[offset + 1].second = chr->genes[1];
             }
             else
             {
-                adj[offset + 1].first = chr->genes[0];
-                adj[offset + chr->genes.size()].second = - chr->genes[0];
+                adj[offset + 1].first = chr->genes[1];
+                adj[offset + chr->length()].second = - chr->genes[1];
                 
-                for(int i = 1; i < chr->genes.size(); ++i)
+                for(int i = 1; i < chr->length(); ++i)
                 {
+                    // TEM BUG AQUI
                     adj[offset + i].second = - chr->genes[i];
                     adj[offset + i + 1].first = chr->genes[i];
                 }
@@ -105,7 +135,7 @@ void AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
         }
         
         // Constroi tabela 2:
-        for(int i = 1; i <= chr->genes.size(); ++i)
+        for(int i = 1; i <= chr->length(); ++i)
         {
             int label = adj[offset + i].first;
         
@@ -271,7 +301,7 @@ int AdjacencyGraph::totalAdjacencies(Genome *g)
     {
         Chromosome *chr = *cIterator;
         
-        int n = chr->genes.size();
+        int n = chr->length();
         
         if(chr->isLinear() == true)
             totalAdj = totalAdj + n+1;

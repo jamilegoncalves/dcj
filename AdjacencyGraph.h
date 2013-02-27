@@ -41,6 +41,9 @@ class AdjacencyGraph
     friend std::ostream & operator<<( std::ostream &os,
 	                                  const AdjacencyGraph& ag );
 
+    void print();
+    void printAdjacencies(std::ostream &os);
+
     private:
 
     Adjacency *adjA, *adjB;

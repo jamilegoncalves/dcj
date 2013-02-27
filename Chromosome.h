@@ -12,6 +12,10 @@ public:
 	std::string name;
 	bool isLinear();
         int numAdjacencies(Chromosome *chr);
+
+	/**
+         * Returns the number of genes of this chromosome. */
+	int length();
 private:
         bool linear;
 };

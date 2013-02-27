@@ -4,6 +4,8 @@ Chromosome::Chromosome(std::string name, bool isLinear)
 {
     this->name = name;
     this->linear = isLinear;
+    genes.push_back(0); // this is to make sure that
+                        // the first index is 1
 }
 
 /**
@@ -14,9 +16,9 @@ int Chromosome::numAdjacencies(Chromosome *chr)
 {
     int numAdj;
     int numTel;
-    
-    int n = chr->genes.size();
-        
+
+    int n = length();
+
     if(chr->isLinear() == true)
     {
         numAdj = n-1;
@@ -34,4 +36,9 @@ int Chromosome::numAdjacencies(Chromosome *chr)
 bool Chromosome::isLinear()
 {
     return linear;
+}
+
+int Chromosome::length()
+{
+    return genes.size()-1;
 }
