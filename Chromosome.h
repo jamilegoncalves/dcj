@@ -13,6 +13,11 @@ public:
 	bool isLinear();
         int numAdjacencies(Chromosome *chr);
 
+        /**
+         * Returns the i-th gene
+         */
+        int operator[](unsigned int i);
+
 	/**
          * Returns the number of genes of this chromosome. */
 	int length();

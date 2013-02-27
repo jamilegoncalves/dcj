@@ -102,34 +102,34 @@ void AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
 
         if(chr->isLinear() == true)
         {
-            adj[offset + 1].first = chr->genes[1];
+            adj[offset + 1].first = (*chr)[1];
             adj[offset + 1].second = 0;
-            adj[offset + chr->length() +1].first = - chr->genes[chr->length()];
+            adj[offset + chr->length() +1].first = - (*chr)[chr->length()];
             adj[offset + chr->length() +1].second = 0;
             
             for(int i = 2; i <= chr->length(); ++i)
             {
-                adj[offset + i].first = - chr->genes[i-1];
-                adj[offset + i].second = chr->genes[i];
+                adj[offset + i].first = - (*chr)[i-1];
+                adj[offset + i].second = (*chr)[i];
             }
         }
         else // if it's a circular chromosome
         {
             if(chr->length() == 1)
             {
-                adj[offset + 1].first = chr->genes[1];
-                adj[offset + 1].second = chr->genes[1];
+                adj[offset + 1].first = (*chr)[1];
+                adj[offset + 1].second = (*chr)[1];
             }
             else
             {
-                adj[offset + 1].first = chr->genes[1];
-                adj[offset + chr->length()].second = - chr->genes[1];
+                adj[offset + 1].first = (*chr)[1];
+                adj[offset + chr->length()].second = - (*chr)[1];
                 
                 for(int i = 1; i < chr->length(); ++i)
                 {
                     // TEM BUG AQUI
-                    adj[offset + i].second = - chr->genes[i];
-                    adj[offset + i + 1].first = chr->genes[i];
+                    adj[offset + i].second = - (*chr)[i];
+                    adj[offset + i + 1].first = (*chr)[i];
                 }
             }
         }

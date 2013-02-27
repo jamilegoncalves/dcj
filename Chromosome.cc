@@ -8,6 +8,11 @@ Chromosome::Chromosome(std::string name, bool isLinear)
                         // the first index is 1
 }
 
+int Chromosome::operator[](unsigned int i)
+{
+    return genes[i];
+}
+
 /**
  * Determinar número de adjacencias no cromossomo
  */
