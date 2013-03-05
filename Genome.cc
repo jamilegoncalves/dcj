@@ -11,7 +11,7 @@ Genome::Genome(std::string name)
 
 int Genome::numGenes()
 {
-    int numGenes = -1;
+    int numGenes = 0;
     
     std::vector<Chromosome*>::iterator cIterator;
             
@@ -20,7 +20,7 @@ int Genome::numGenes()
     {
         Chromosome *chr = *cIterator;
         
-        numGenes = numGenes + chr->genes.size();
+        numGenes = numGenes + chr->length();
     }
     return numGenes;
 }

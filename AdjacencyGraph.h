@@ -28,18 +28,14 @@ class AdjacencyGraph
     ~AdjacencyGraph();
     int totalAdjacencies(Genome *g);
 
-    int numCycles();
-    int oddPaths();
     int sortByDCJ();
-
-    int dcjDistance(Genome *a, Genome *b); // TODO: implementar usando formula
-
+    
 	/**
 	 * Prints the representation of this AdjacencyGraph to a
 	 * stream.
 	 */
     friend std::ostream & operator<<( std::ostream &os,
-	                                  const AdjacencyGraph& ag );
+	                                  const AdjacencyGraph& ag);
 
     void print();
     void printAdjacencies(std::ostream &os);
@@ -57,7 +53,7 @@ class AdjacencyGraph
     
     Genome *a;
     Genome *b;
-    int n;
+    int n, numAdj;
     Vertex *vertex;
 
 };

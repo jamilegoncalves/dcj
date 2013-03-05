@@ -5,11 +5,13 @@
 int main(int argc, char *argv[])
 {
 	Chromosome *a1 = new Chromosome("chrA1", true);
-/*      a1->genes.push_back(0);
+        
+        /*
         a1->genes.push_back(1);
         a1->genes.push_back(2);
         a1->genes.push_back(3);
- */
+        */
+        
         
 	a1->genes.push_back(1);
 	a1->genes.push_back(3);
@@ -25,36 +27,39 @@ int main(int argc, char *argv[])
         
         
 	Genome *a = new Genome("Genome A");
-	a->chromosomes.push_back(a1);
+        a->chromosomes.push_back(a1);
         a->chromosomes.push_back(a2);
         a->chromosomes.push_back(a3);
         
+	Chromosome *b1 = new Chromosome("chrB1", false);
         
-	Chromosome *b1 = new Chromosome("chrB1", true);
-/*	b1->genes.push_back(0);
+        /*
         b1->genes.push_back(1);
-	b1->genes.push_back(-2);
+        b1->genes.push_back(-2);
         b1->genes.push_back(3);
-*/        
+        */
         
-        b1->genes.push_back(0);
+        
         b1->genes.push_back(-1);
 	b1->genes.push_back(-2);
 
         Chromosome *b2 = new Chromosome("chrB2", true);
         b2->genes.push_back(3);
 	b2->genes.push_back(4);
-        b2->genes.push_back(5);
+        
+        Chromosome *b3 = new Chromosome("chrB3", true);
+        b3->genes.push_back(5);
 
-        Chromosome *b3 = new Chromosome("chrB3", false);
-        b3->genes.push_back(-6);
-	b3->genes.push_back(-7);
+        Chromosome *b4 = new Chromosome("chrB4", false);
+        b4->genes.push_back(-6);
+	b4->genes.push_back(-7);
         
         
 	Genome *b = new Genome("Genome B");
 	b->chromosomes.push_back(b1);
         b->chromosomes.push_back(b2);
         b->chromosomes.push_back(b3);
+        b->chromosomes.push_back(b4);
         
 	AdjacencyGraph *ag = new AdjacencyGraph(a,b);
 

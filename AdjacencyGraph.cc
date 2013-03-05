@@ -5,17 +5,13 @@ AdjacencyGraph::AdjacencyGraph(Genome *a, Genome *b)
     // Bergeron, Mixtacki, Stoye. A Unifying View
     // of Genome earrangements. 2006. Algorithm 1
     n = a->numGenes();
-
+    numAdj = totalAdjacencies(a);
     vertex = new Vertex[2*n + 1];
 
     adjA = adjB = NULL; // DEBUG
 
     constructTables(a, adjA, locA);
     constructTables(b, adjB, locB);
-
-    // TODO: tirar estas constantes
-    adjA[10].first = 0;
-    adjB[9].first = 0;
     
     for(int i = 1; adjA[i].first != 0; ++i)
     {
@@ -31,7 +27,7 @@ AdjacencyGraph::AdjacencyGraph(Genome *a, Genome *b)
         else
             vertex[i].vertex2 = locB[- adjA[i].second].head;
     }
-    
+    print();
 }
 
 AdjacencyGraph::~AdjacencyGraph()
@@ -51,13 +47,27 @@ void AdjacencyGraph::printAdjacencies(std::ostream &os)
     {
         os << "AdjA:" << std::endl;
         os << "first:";
-        for(int i = 1; i <= 15; ++i)
+        for(int i = 1; i <= 10; ++i)
             os << "\t" << adjA[i].first;
         os << std::endl;
 
         os << "second:";
-        for(int i = 1; i <= 15; ++i)
+        for(int i = 1; i <= 9; ++i)
             os << "\t" << adjA[i].second;
+        os << std::endl;
+    }
+
+    if ( locA != NULL )
+    {
+        os << "LocA:" << std::endl;
+        os << "head:";
+        for(int i = 1; i <= 7; ++i)
+            os << "\t" << locA[i].head;
+        os << std::endl;
+
+        os << "tail:";
+        for(int i = 1; i <= 7; ++i)
+            os << "\t" << locA[i].tail;
         os << std::endl;
     }
 
@@ -66,13 +76,28 @@ void AdjacencyGraph::printAdjacencies(std::ostream &os)
         os << std::endl;
         os << "AdjB:" << std::endl;
         os << "first:";
-        for(int i = 1; i <= 15; ++i)
+        for(int i = 1; i <= 9; ++i)
             os << "\t" << adjB[i].first;
         os << std::endl;
 
         os << "second:";
-        for(int i = 1; i <= 15; ++i)
+        for(int i = 1; i <= 9; ++i)
             os << "\t" << adjB[i].second;
+        os << std::endl;
+    }
+    
+    if ( locB != NULL )
+    {
+        os << std::endl;
+        os << "LocB:" << std::endl;
+        os << "head:";
+        for(int i = 1; i <= 7; ++i)
+            os << "\t" << locB[i].head;
+        os << std::endl;
+
+        os << "tail:";
+        for(int i = 1; i <= 7; ++i)
+            os << "\t" << locB[i].tail;
         os << std::endl;
     }
 }
@@ -92,7 +117,7 @@ void AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
     adj = new Adjacency[2*n + 2];
     loc = new Location[n+1];
     int offset = 0;
-
+  
     std::vector<Chromosome*>::iterator cIterator;
     
     for(cIterator = g->chromosomes.begin(); 
@@ -104,8 +129,8 @@ void AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
         {
             adj[offset + 1].first = (*chr)[1];
             adj[offset + 1].second = 0;
-            adj[offset + chr->length() +1].first = - (*chr)[chr->length()];
-            adj[offset + chr->length() +1].second = 0;
+            adj[offset + chr->length() + 1].first = - (*chr)[chr->length()];
+            adj[offset + chr->length() + 1].second = 0;
             
             for(int i = 2; i <= chr->length(); ++i)
             {
@@ -125,68 +150,36 @@ void AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
                 adj[offset + 1].first = (*chr)[1];
                 adj[offset + chr->length()].second = - (*chr)[1];
                 
-                for(int i = 1; i < chr->length(); ++i)
+                for(int i = 2; i <= chr->length(); ++i)
                 {
-                    // TEM BUG AQUI
-                    adj[offset + i].second = - (*chr)[i];
-                    adj[offset + i + 1].first = (*chr)[i];
+                    adj[offset + 1].second = - (*chr)[i];
+                    adj[offset + 2].first = (*chr)[i];
                 }
             }
         }
         
         // Constroi tabela 2:
-        for(int i = 1; i <= chr->length(); ++i)
+        for(int i = 1; i <= chr->length()+1; ++i)
         {
             int label = adj[offset + i].first;
         
             if(label > 0)
-                loc[label].tail = i;
+                loc[label].tail = offset + i;
             else if(label < 0)
-                loc[-label].head = i;
+                loc[-label].head = offset + i;
         
             label = adj[offset + i].second;
         
             if(label == 0)
                 continue;
             else if(label > 0)
-                loc[label].tail = label;
+                loc[label].tail = offset + i;
             else if(label < 0)
-                loc[-label].head = -label;
+                loc[-label].head = i;
         }
         offset = offset + chr->numAdjacencies(chr);
-    }
-    
-/*
-    for(int i = 0; i <= offset; ++i)
-    {
-        std::cout << "Adj["<< i <<"].first: " << adj[i].first << std::endl;
-        std::cout << "Adj["<< i <<"].second: " << adj[i].second << std::endl;
-        
-        std::cout << "Loc["<< i <<"].head: " << loc[i].head << std::endl;
-        std::cout << "Loc["<< i <<"].tail: " << loc[i].tail << std::endl;        
-    }
- */
-}
-
-int AdjacencyGraph::numCycles()
-{
-    
-}
-
-int AdjacencyGraph::oddPaths()
-{
-    
-}
-
-int AdjacencyGraph::dcjDistance(Genome *a, Genome *b)
-{
-    int n = a->numGenes();
-    int c = numCycles();
-    int i = oddPaths();
-    
-    int dist = n - (c + i/2);
-
-    return dist;
+    } // end for
+    adj[totalAdjacencies(g)+1].first = 0;
 }
 
 /**
@@ -314,7 +307,7 @@ int AdjacencyGraph::totalAdjacencies(Genome *g)
 
 std::ostream & operator<<(std::ostream &os, const AdjacencyGraph& ag)
 {
-    for (int i = 1; i <= ag.n; ++i)
+    for (int i = 1; i <= ag.numAdj; ++i)
         os << ag.vertex[i].vertex1 << "/"
            << ag.vertex[i].vertex2 << std::endl;
 
