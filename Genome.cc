@@ -24,3 +24,14 @@ int Genome::numGenes()
     }
     return numGenes;
 }
+
+std::ostream & operator<<(std::ostream &os, const Genome& g)
+{
+    os << ">" << g.name << std::endl;
+
+    for ( int i = 0; i < g.chromosomes.size(); ++i )
+        os << *(g.chromosomes[i]);
+    os << std::endl;
+
+    return os;
+}

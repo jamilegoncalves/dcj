@@ -2,6 +2,7 @@
 #define CHROMOSOME_H
 #include <vector>
 #include <string>
+#include <iostream>
 
 class Chromosome
 {
@@ -12,6 +13,13 @@ public:
 	std::string name;
 	bool isLinear();
         int numAdjacencies(Chromosome *chr);
+
+        /**
+         * Prints the representation of this Genome to a
+         * stream.
+         */
+        friend std::ostream & operator<<( std::ostream &os,
+                                          const Chromosome& c);
 
         /**
          * Returns the i-th gene

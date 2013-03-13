@@ -60,6 +60,9 @@ int main(int argc, char *argv[])
         b->chromosomes.push_back(b2);
         b->chromosomes.push_back(b3);
         b->chromosomes.push_back(b4);
+
+	std::cerr << *a << std::endl;
+	std::cerr << *b << std::endl;
         
 	AdjacencyGraph *ag = new AdjacencyGraph(a,b);
 

@@ -47,3 +47,17 @@ int Chromosome::length()
 {
     return genes.size()-1;
 }
+
+std::ostream & operator<<( std::ostream &os, const Chromosome& c)
+{
+    for (int i=1; i < c.genes.size(); ++i)
+    {
+        os << c.genes[i] << " ";
+    }
+    if ( c.linear )
+        os << "| ";
+    else
+        os << ") ";
+
+    return os;
+}
