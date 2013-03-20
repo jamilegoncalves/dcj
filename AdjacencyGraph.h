@@ -29,13 +29,13 @@ class AdjacencyGraph
     int totalAdjacencies(Genome *g);
 
     int sortByDCJ();
-    
-	/**
-	 * Prints the representation of this AdjacencyGraph to a
-	 * stream.
-	 */
+
+/**
+* Prints the representation of this AdjacencyGraph to a
+* stream.
+*/
     friend std::ostream & operator<<( std::ostream &os,
-	                                  const AdjacencyGraph& ag);
+const AdjacencyGraph& ag);
 
     void print();
     void printAdjacencies(std::ostream &os);
@@ -50,7 +50,7 @@ class AdjacencyGraph
                        // TODO: implementar Algorithm 2 e retornar dist
 
     void constructTables(Genome *g, Adjacency *&adj, Location *&loc);
-    
+
     Genome *a;
     Genome *b;
     int n, numAdj;

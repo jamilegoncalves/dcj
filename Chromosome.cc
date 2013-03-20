@@ -14,8 +14,8 @@ int Chromosome::operator[](unsigned int i)
 }
 
 /**
- * Determinar número de adjacencias no cromossomo
- */
+* Determinar número de adjacencias no cromossomo
+*/
 
 int Chromosome::numAdjacencies(Chromosome *chr)
 {
