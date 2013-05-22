@@ -2,12 +2,26 @@
 #define ADJACENCYGRAPH_H
 #include "Genome.h"
 #include <iostream>
+#include <limits.h>
 
-typedef struct
+#define END_OF_TABLE INT_MAX
+
+class Adjacency
 {
+public:
     int first;
     int second;
-} Adjacency;
+    bool equals(Adjacency& other);
+    /* Returns true if it is an adjacency, false if it is a telomere.
+     */
+    bool isAdjacency();
+    /* Returns true if it is a telomere, false if it is an adjacency.
+     */
+    bool isTelomere();
+
+    /* returns this \ {x}  */
+    int setMinus(int x);
+};
 
 typedef struct
 {
@@ -30,6 +44,7 @@ class AdjacencyGraph
 
     int sortByDCJ();
 
+
 /**
 * Prints the representation of this AdjacencyGraph to a
 * stream.
@@ -44,12 +59,17 @@ const AdjacencyGraph& ag);
 
     Adjacency *adjA, *adjB;
     Location *locA, *locB;
+    int idxEndOfAdjA;
 
     int sortByDCJ(int n, Adjacency *adjA, Adjacency *adjB,
             Location *locA, Location *locB);
                        // TODO: implementar Algorithm 2 e retornar dist
 
-    void constructTables(Genome *g, Adjacency *&adj, Location *&loc);
+    /**
+     * Constroi tabelas: Adjacency e Location.
+     * @returns Número de adjacências
+     */
+    int constructTables(Genome *g, Adjacency *&adj, Location *&loc);
 
     Genome *a;
     Genome *b;

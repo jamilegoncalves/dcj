@@ -1,4 +1,5 @@
 #include "AdjacencyGraph.h"
+#include <stack>
 
 AdjacencyGraph::AdjacencyGraph(Genome *a, Genome *b)
 {
@@ -10,7 +11,7 @@ AdjacencyGraph::AdjacencyGraph(Genome *a, Genome *b)
 
     adjA = adjB = NULL; // DEBUG
 
-    constructTables(a, adjA, locA);
+    idxEndOfAdjA = constructTables(a, adjA, locA)+1;
     constructTables(b, adjB, locB);
 
     for(int i = 1; adjA[i].first != 0; ++i)
@@ -41,18 +42,96 @@ void AdjacencyGraph::print()
     printAdjacencies(std::cerr);
 }
 
+void printNumber(int num, std::ostream &os)
+{
+    if ( num > 0 )
+    {
+        os << num << "t";
+    }
+    else if ( num < 0 )
+    {
+        os << -num << "h";
+    }
+}
+
+void AdjacencyGraph::printAdjacencies(std::ostream &os)
+{
+    if ( adjA != NULL )
+    {
+        os << "AdjA:" << std::endl;
+        for(int i = 1; adjA[i].first != END_OF_TABLE ; ++i)
+        {
+            printNumber(adjA[i].first, os);
+            if (adjA[i].second != 0)
+            {
+                os << ",";
+                printNumber(adjA[i].second, os);
+            }
+            os << " \t";
+
+        }
+        os << std::endl << std::endl;
+    }
+
+    if ( locA != NULL )
+    {
+        os << "LocA:" << std::endl;
+        os << "head:";
+        for(int i = 1; i <= 19; ++i)
+            os << "\t" << locA[i].head;
+        os << std::endl;
+
+        os << "tail:";
+        for(int i = 1; i <= 19; ++i)
+            os << "\t" << locA[i].tail;
+        os << std::endl;
+    }
+
+    if ( adjB != NULL )
+    {
+        os << "AdjB:" << std::endl;
+        for(int i = 1; adjB[i].first != END_OF_TABLE ; ++i)
+        {
+            printNumber(adjB[i].first, os);
+            if (adjB[i].second != 0)
+            {
+                os << ",";
+                printNumber(adjB[i].second, os);
+            }
+            os << " \t";
+        }
+        os << std::endl << std::endl;
+    }
+
+    if ( locB != NULL )
+    {
+        os << std::endl;
+        os << "LocB:" << std::endl;
+        os << "head:";
+        for(int i = 1; i <= 19; ++i)
+            os << "\t" << locB[i].head;
+        os << std::endl;
+
+        os << "tail:";
+        for(int i = 1; i <= 19; ++i)
+            os << "\t" << locB[i].tail;
+        os << std::endl;
+    }
+}
+
+/*
 void AdjacencyGraph::printAdjacencies(std::ostream &os)
 {
     if ( adjA != NULL )
     {
         os << "AdjA:" << std::endl;
         os << "first:";
-        for(int i = 1; i <= 10; ++i)
+        for(int i = 1; i <= 22; ++i)
             os << "\t" << adjA[i].first;
         os << std::endl;
 
         os << "second:";
-        for(int i = 1; i <= 9; ++i)
+        for(int i = 1; i <= 22; ++i)
             os << "\t" << adjA[i].second;
         os << std::endl;
     }
@@ -61,12 +140,12 @@ void AdjacencyGraph::printAdjacencies(std::ostream &os)
     {
         os << "LocA:" << std::endl;
         os << "head:";
-        for(int i = 1; i <= 7; ++i)
+        for(int i = 1; i <= 19; ++i)
             os << "\t" << locA[i].head;
         os << std::endl;
 
         os << "tail:";
-        for(int i = 1; i <= 7; ++i)
+        for(int i = 1; i <= 19; ++i)
             os << "\t" << locA[i].tail;
         os << std::endl;
     }
@@ -76,12 +155,12 @@ void AdjacencyGraph::printAdjacencies(std::ostream &os)
         os << std::endl;
         os << "AdjB:" << std::endl;
         os << "first:";
-        for(int i = 1; i <= 9; ++i)
+        for(int i = 1; i <= 22; ++i)
             os << "\t" << adjB[i].first;
         os << std::endl;
 
         os << "second:";
-        for(int i = 1; i <= 9; ++i)
+        for(int i = 1; i <= 22; ++i)
             os << "\t" << adjB[i].second;
         os << std::endl;
     }
@@ -91,16 +170,17 @@ void AdjacencyGraph::printAdjacencies(std::ostream &os)
         os << std::endl;
         os << "LocB:" << std::endl;
         os << "head:";
-        for(int i = 1; i <= 7; ++i)
+        for(int i = 1; i <= 19; ++i)
             os << "\t" << locB[i].head;
         os << std::endl;
 
         os << "tail:";
-        for(int i = 1; i <= 7; ++i)
+        for(int i = 1; i <= 19; ++i)
             os << "\t" << locB[i].tail;
         os << std::endl;
     }
 }
+*/
 
 int AdjacencyGraph::sortByDCJ()
 {
@@ -108,10 +188,10 @@ int AdjacencyGraph::sortByDCJ()
 }
 
 /**
- * Constroi tabelas: Adjacency e Location
+ * Constroi tabelas: Adjacency e Location.
+ * @returns Número de adjacências
  */
-
-void AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
+int AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
 {
     int n = g->numGenes();
     adj = new Adjacency[2*n + 2];
@@ -148,17 +228,17 @@ void AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
             else
             {
                 adj[offset + 1].first = (*chr)[1];
-                adj[offset + chr->length()].second = - (*chr)[1];
+                adj[offset + 1].second = - (*chr)[chr->length()];
 
                 for(int i = 2; i <= chr->length(); ++i)
                 {
-                    adj[offset + 1].second = - (*chr)[i];
-                    adj[offset + 2].first = (*chr)[i];
+                    adj[offset + i].first = - (*chr)[i-1];
+                    adj[offset + i].second = (*chr)[i];
                 }
             }
         }
 
-        // Constroi tabela 2:
+        // Constroi tabela de locação
         for(int i = 1; i <= chr->length()+1; ++i)
         {
             int label = adj[offset + i].first;
@@ -175,11 +255,17 @@ void AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
             else if(label > 0)
                 loc[label].tail = offset + i;
             else if(label < 0)
-                loc[-label].head = i;
+                loc[-label].head = offset + i;
         }
         offset = offset + chr->numAdjacencies(chr);
     } // end for
-    adj[totalAdjacencies(g)+1].first = 0;
+
+    int numAdj = totalAdjacencies(g);
+
+    for (int i = numAdj+1; i < 2*n+2; ++i)
+        adj[i].first = END_OF_TABLE;
+
+    return numAdj;
 }
 
 /**
@@ -189,104 +275,181 @@ void AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
 int AdjacencyGraph::sortByDCJ(int n, Adjacency *adjA, Adjacency *adjB,
                                     Location *locA, Location *locB)
 {
-    Adjacency *newadjA = new Adjacency[2*n + 2];
+    Adjacency u, v, tempU, tempV;
+    std::stack<int> vacancies;
 
     int dist = 0;
 
-    // iterate over all adjacencies/telomeres of genome B
-    for(int i = 1; adjB[i].first != 0; ++i)
+    // iterate over all adjacencies of genome B
+    for(int i = 1; adjB[i].first != END_OF_TABLE; ++i)
     {
-        int u, v;
-
-        if(adjB[i].second != 0) // if it is an adjacency
+        // if it is an adjacency
+        if(adjB[i].isAdjacency())
         {
-            if(adjB[i].first > 0)
-                u = locA[adjB[i].first].tail;
-            else
-                u = locA[- adjB[i].first].head;
+            int idxU, idxV;
+            int p = adjB[i].first, q = adjB[i].second;
 
-            if(adjB[i].second > 0)
-                v = locA[adjB[i].second].tail;
-            else
-                v = locA[- adjB[i].second].head;
-
-            if(u != v)
+            // let u be the element of genome A that contains p
+            if(p > 0)
             {
-                std::cout << "Cut: " << adjA[u].first << "," << adjA[u].second
-                                                << std::endl;
-                std::cout << "Cut: " << adjA[v].first << "," << adjA[v].second
-                                                << std::endl;
+                idxU = locA[p].tail;
+                u = adjA[idxU];
+            }
+            else
+            {
+                idxU = locA[-p].head;
+                u = adjA[idxU];
+            }
 
-                newadjA[u] = adjB[i];
-                newadjA[v].first = adjA[u].second;
-                newadjA[v].second = adjA[v].second;
+            // let v be the element of genome A that contains q
+            if(q > 0)
+            {
+                idxV = locA[q].tail;
+                v = adjA[idxV];
+            }
+            else
+            {
+                idxV = locA[-q].head;
+                v = adjA[idxV];
+            }
 
-                std::cout << "Join: " << newadjA[u].first << ","
-                                            << newadjA[u].second << std::endl;
-                std::cout << "Join: " << newadjA[v].first << ","
-                                            << newadjA[v].second << std::endl;
+            // if u != v then
+            if( !u.equals(v) )
+            {
+                std::cout << "Cut: " << u.first << "," << u.second
+                                                << std::endl;
+                std::cout << "Cut: " << v.first << "," << v.second
+                                                << std::endl;
+                // replace u in A by {p,q}
+                tempU.first = p;
+                tempU.second = q;
+
+                // replace v in A by (u\{p}) U (v\{q})
+                tempV.first = u.setMinus(p);
+                tempV.second = v.setMinus(q);
+
+                if (tempV.first == 0)
+                {
+                    if(tempV.second == 0)
+                        vacancies.push(idxV);
+                    else
+                    {
+                        tempV.first = tempV.second;
+                        tempV.second = 0;
+                    }
+                }
+                std::cout << "Join: " << tempU.first << ","
+                                            << tempU.second << std::endl;
+                std::cout << "Join: " << tempV.first << ","
+                                            << tempV.second << std::endl;
 
                 // Altero a Tabela AdjA:
-                adjA[u] = newadjA[u];
-                adjA[v] = newadjA[v];
+                adjA[idxU] = tempU;
+                adjA[idxV] = tempV;
 
                 // Altero a Tabela LocA:
-                if(adjA[u].first > 0)
-                    locA[adjA[u].first].tail = u;
+                if(adjA[idxU].first > 0)
+                    locA[adjA[idxU].first].tail = idxU;
                 else
-                    locA[-adjA[u].first].head = u;
+                    locA[-adjA[idxU].first].head = idxU;
 
-                if(adjA[u].second > 0)
-                    locA[adjA[u].second].tail = u;
+                if(adjA[idxU].second > 0)
+                    locA[adjA[idxU].second].tail = idxU;
                 else
-                    locA[-adjA[u].second].head = u;
+                    locA[-adjA[idxU].second].head = idxU;
 
-                if(adjA[v].first > 0)
-                    locA[adjA[v].first].tail = v;
+                if(adjA[idxV].first > 0)
+                    locA[adjA[idxV].first].tail = idxV;
                 else
-                    locA[-adjA[v].first].head = v;
+                    locA[-adjA[idxV].first].head = idxV;
 
-                if(adjA[v].second > 0)
-                    locA[adjA[v].second].tail = v;
+                if(adjA[idxV].second > 0)
+                    locA[adjA[idxV].second].tail = idxV;
                 else
-                    locA[-adjA[v].second].head = v;
+                    locA[-adjA[idxV].second].head = idxV;
 
+                //print();
                 ++dist;
+                std::cout << "Distancia: " << dist << std::endl;
             }
-        }
-        else // if it is a telomere in B
-        {
-            if(adjB[i].first > 0)
-                u = locA[adjB[i].first].tail;
-            else
-                u = locA[- adjB[i].first].head;
+        } // end if adjacency
+    }// end for
 
-            if(adjA[u].second != 0) // if u is an adjacency
+    // iterate over all telomeres of genome B
+    for(int i = 1; adjB[i].first != END_OF_TABLE; ++i)
+    {
+        // if it is a telomere in B
+        if (adjB[i].isTelomere())
+        {
+
+            int idxU, idxV;
+            int p = adjB[i].first;
+
+            // let u be the element of genome A that contains p
+            if(p > 0)
             {
-                newadjA[u].first = adjB[i].first;
-                newadjA[u].second = adjB[u].second;
+                idxU = locA[p].tail;
+                u = adjA[idxU];
+            }
+            else
+            {
+                idxU = locA[- p].head;
+                u = adjA[idxU];
+            }
+
+            // if u is an adjacency
+            if(u.isAdjacency())
+            {
+                std::cout << "Cut: " << u.first << "," << u.second
+                                                << std::endl;
+
+                // replace u in A by {p} ...
+                tempU.first = p;
+                tempU.second = 0;
+
+                std::cout << "Join: " << tempU.first << ","
+                                            << tempU.second << std::endl;
 
                 // Altero Tabela AdjA:
-                adjA[u] = newadjA[u];
+                adjA[idxU] = tempU;
 
                 // Altero Tabela LocA:
-                if(adjA[u].first > 0)
-                    locA[adjA[u].first].tail = u;
+                if(tempU.first > 0)
+                    locA[tempU.first].tail = idxU;
                 else
-                    locA[-adjA[u].first].head = u;
+                    locA[-tempU.first].head = idxU;
 
-                if(adjA[u].second > 0)
-                    locA[adjA[u].second].tail = u;
+                // ... and (u\{p})
+                tempV.first = u.setMinus(p);
+                tempV.second = 0;
+
+                std::cout << "Join: " << tempV.first << ","
+                                            << tempV.second << std::endl;
+
+                if(vacancies.empty())
+                {
+                    idxV = idxEndOfAdjA;
+                    ++idxEndOfAdjA;
+                }
                 else
-                    locA[-adjA[u].second].head = u;
+                {
+                    idxV = vacancies.top();
+                    vacancies.pop();
+                }
+                if(adjA[idxU].second > 0)
+                    locA[adjA[idxU].second].tail = idxU;
+                else
+                    locA[-adjA[idxU].second].head = idxU;
 
                 ++dist;
+
+                //print();
+                
+                std::cout << "Distancia: " << dist << std::endl;
             } // end if u is an adjacency
+        } // end if telomere
+    }// end for
 
-        } // end if adjacency/telomere
-    } // end for
-
-    delete newadjA;
     return dist;
 }
 
@@ -314,6 +477,44 @@ int AdjacencyGraph::totalAdjacencies(Genome *g)
     return totalAdj;
 }
 
+bool Adjacency::equals(Adjacency &a)
+{
+    return((first == a.first)&&(second==a.second)
+                            || (first==a.second)&&(second==a.first));
+}
+
+/* Returns true if it is an adjacency, false if it is a telomere.
+ */
+bool Adjacency::isAdjacency()
+{
+    if (first == 0)
+        return false;
+    if(second != 0)
+        return true;
+    else
+        return false;
+}
+
+/* Returns true if it is a telomere, false if it is an adjacency.
+ */
+bool Adjacency::isTelomere()
+{
+    if (first == 0)
+        return false;
+    if(second == 0)
+        return true;
+    else
+        return false;
+}
+
+/* returns this \ {x}  */
+int Adjacency::setMinus(int x)
+{
+    if(first == x)
+        return second;
+    else
+        return first;
+}
 
 std::ostream & operator<<(std::ostream &os, const AdjacencyGraph& ag)
 {
