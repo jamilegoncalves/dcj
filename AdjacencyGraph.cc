@@ -1,5 +1,6 @@
 #include "AdjacencyGraph.h"
 #include <stack>
+#include <map>
 
 AdjacencyGraph::AdjacencyGraph(Genome *a, Genome *b)
 {
@@ -7,33 +8,24 @@ AdjacencyGraph::AdjacencyGraph(Genome *a, Genome *b)
     // of Genome earrangements. 2006. Algorithm 1
     n = a->numGenes();
     numAdj = totalAdjacencies(a);
-    vertex = new Vertex[2*n + 1];
 
     adjA = adjB = NULL; // DEBUG
 
     idxEndOfAdjA = constructTables(a, adjA, locA)+1;
-    constructTables(b, adjB, locB);
+    idxEndOfAdjB = constructTables(b, adjB, locB)+1;
 
-    for(int i = 1; adjA[i].first != 0; ++i)
-    {
-        if(adjA[i].first > 0)
-            vertex[i].vertex1 = locB[adjA[i].first].tail;
-        else
-            vertex[i].vertex1 = locB[- adjA[i].first].head;
+    //print(); // até aqui ok
 
-        if(adjA[i].second == 0)
-            vertex[i].vertex2 = 0;
-        else if(adjA[i].second > 0)
-            vertex[i].vertex2 = locB[adjA[i].second].tail;
-        else
-            vertex[i].vertex2 = locB[- adjA[i].second].head;
-    }
-    print();
+//    paths(); // até aqui ok
+
+//    capping(); // até aqui ok
+
+//    print();
+
 }
 
 AdjacencyGraph::~AdjacencyGraph()
 {
-    delete vertex;
     delete adjA, adjB, locA, locB;
 }
 
@@ -59,7 +51,7 @@ void AdjacencyGraph::printAdjacencies(std::ostream &os)
     if ( adjA != NULL )
     {
         os << "AdjA:" << std::endl;
-        for(int i = 1; adjA[i].first != END_OF_TABLE ; ++i)
+        for(int i = 1; i < idxEndOfAdjA ; ++i)
         {
             printNumber(adjA[i].first, os);
             if (adjA[i].second != 0)
@@ -77,12 +69,12 @@ void AdjacencyGraph::printAdjacencies(std::ostream &os)
     {
         os << "LocA:" << std::endl;
         os << "head:";
-        for(int i = 1; i <= 19; ++i)
+        for(int i = 1; i <= 16; ++i)
             os << "\t" << locA[i].head;
         os << std::endl;
 
         os << "tail:";
-        for(int i = 1; i <= 19; ++i)
+        for(int i = 1; i <= 16; ++i)
             os << "\t" << locA[i].tail;
         os << std::endl;
     }
@@ -90,7 +82,7 @@ void AdjacencyGraph::printAdjacencies(std::ostream &os)
     if ( adjB != NULL )
     {
         os << "AdjB:" << std::endl;
-        for(int i = 1; adjB[i].first != END_OF_TABLE ; ++i)
+        for(int i = 1; i < idxEndOfAdjB; ++i)
         {
             printNumber(adjB[i].first, os);
             if (adjB[i].second != 0)
@@ -108,12 +100,12 @@ void AdjacencyGraph::printAdjacencies(std::ostream &os)
         os << std::endl;
         os << "LocB:" << std::endl;
         os << "head:";
-        for(int i = 1; i <= 19; ++i)
+        for(int i = 1; i <= 16; ++i)
             os << "\t" << locB[i].head;
         os << std::endl;
 
         os << "tail:";
-        for(int i = 1; i <= 19; ++i)
+        for(int i = 1; i <= 16; ++i)
             os << "\t" << locB[i].tail;
         os << std::endl;
     }
@@ -182,11 +174,6 @@ void AdjacencyGraph::printAdjacencies(std::ostream &os)
 }
 */
 
-int AdjacencyGraph::sortByDCJ()
-{
-    return sortByDCJ(n, adjA, adjB, locA, locB);
-}
-
 /**
  * Constroi tabelas: Adjacency e Location.
  * @returns Número de adjacências
@@ -194,8 +181,9 @@ int AdjacencyGraph::sortByDCJ()
 int AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
 {
     int n = g->numGenes();
-    adj = new Adjacency[2*n + 2];
-    loc = new Location[n+1];
+    int adjacencyTableSize = 3*n + 2;
+    adj = new Adjacency[adjacencyTableSize];
+    loc = new Location[2*n+1];
     int offset = 0;
 
     std::vector<Chromosome*>::iterator cIterator;
@@ -209,13 +197,16 @@ int AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
         {
             adj[offset + 1].first = (*chr)[1];
             adj[offset + 1].second = 0;
+            adj[offset + 1].visited = false;
             adj[offset + chr->length() + 1].first = - (*chr)[chr->length()];
             adj[offset + chr->length() + 1].second = 0;
+            adj[offset + chr->length() + 1].visited = false;
 
             for(int i = 2; i <= chr->length(); ++i)
             {
                 adj[offset + i].first = - (*chr)[i-1];
                 adj[offset + i].second = (*chr)[i];
+                adj[offset + i].visited = false;
             }
         }
         else // if it's a circular chromosome
@@ -224,16 +215,19 @@ int AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
             {
                 adj[offset + 1].first = (*chr)[1];
                 adj[offset + 1].second = (*chr)[1];
+                adj[offset + 1].visited = false;
             }
             else
             {
                 adj[offset + 1].first = (*chr)[1];
                 adj[offset + 1].second = - (*chr)[chr->length()];
+                adj[offset + 1].visited = false;
 
                 for(int i = 2; i <= chr->length(); ++i)
                 {
                     adj[offset + i].first = - (*chr)[i-1];
                     adj[offset + i].second = (*chr)[i];
+                    adj[offset + i].visited = false;
                 }
             }
         }
@@ -262,7 +256,7 @@ int AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
 
     int numAdj = totalAdjacencies(g);
 
-    for (int i = numAdj+1; i < 2*n+2; ++i)
+    for (int i = numAdj+1; i < adjacencyTableSize; ++i)
         adj[i].first = END_OF_TABLE;
 
     return numAdj;
@@ -272,8 +266,7 @@ int AdjacencyGraph::constructTables(Genome *g, Adjacency *&adj, Location *&loc)
  * Implementation of Bergeron, Mixtacki & Stoye's greedy sorting
  * by DCJ (Algorithm 2).
  */
-int AdjacencyGraph::sortByDCJ(int n, Adjacency *adjA, Adjacency *adjB,
-                                    Location *locA, Location *locB)
+int AdjacencyGraph::sortByDCJ()
 {
     Adjacency u, v, tempU, tempV;
     std::stack<int> vacancies;
@@ -444,13 +437,498 @@ int AdjacencyGraph::sortByDCJ(int n, Adjacency *adjA, Adjacency *adjB,
                 ++dist;
 
                 //print();
-                
+
                 std::cout << "Distancia: " << dist << std::endl;
             } // end if u is an adjacency
         } // end if telomere
     }// end for
 
     return dist;
+}
+
+int AdjacencyGraph::sortByRestrictedDCJ()
+{
+    paths();
+    capping();
+    print();
+    std::map<int, int> translationTable, reverseTranslationTable;
+
+    buildTranslationTable(adjB, locB, translationTable, reverseTranslationTable);
+
+    std::map<int, int>::iterator entry_ = translationTable.begin();
+    while ( entry_ != translationTable.end() )
+    {
+        std::pair<int, int> entry = *entry_;
+        std::cout << entry.first << " -> " << entry.second << std::endl;
+        ++entry_;
+    }
+
+    // Renumeração da AdjB
+    for(int i = 1; adjB[i].first != END_OF_TABLE; ++i)
+    {
+        adjB[i].first = translationTable[adjB[i].first];
+        adjB[i].second = translationTable[adjB[i].second];
+    }
+
+    // Renumeração da AdjA
+    for(int i = 1; i < idxEndOfAdjA; i++)
+    {
+        adjA[i].first = translationTable[adjA[i].first];
+        adjA[i].second = translationTable[adjA[i].second];
+    }
+
+    rebuildLocation(adjA, locA, idxEndOfAdjA);
+    rebuildLocation(adjB, locB, idxEndOfAdjB);
+    print();
+}
+
+/**
+ * Reconstroi tabela de locação
+ */
+
+void AdjacencyGraph::rebuildLocation(Adjacency *adj, Location *loc, int n)
+{
+    for(int i=1; i < n; i++)
+    {
+        if(adj[i].first > 0)
+            loc[adj[i].first].tail = i;
+        else
+            loc[-adj[i].first].head = i;
+
+        if(adj[i].second > 0)
+            loc[adj[i].second].tail = i;
+        else if(adj[i].second < 0)
+            loc[-adj[i].second].head = i;
+    }
+}
+
+/**
+ * Calcula a distância de DCJ pela fórmula
+ * d = N - (C + I/2)
+ */
+int AdjacencyGraph::DCJdistance()
+{
+    paths();
+    int i = oddPaths.size() + adjacencies.size();
+    int c = cycles.size();
+
+    int dist = n - (c + (i/2));
+
+    return dist;
+}
+
+/**
+ * Armazena:
+ * Primeiro elemento de cada caminho ímpar na fila: oddpaths
+ * Primeiro elemento de cada caminho par na fila: evenpaths
+ */
+void AdjacencyGraph::paths()
+{
+    for(int i=1; adjA[i].first != END_OF_TABLE; ++i)
+        adjA[i].visited = false;
+
+    for(int i=1; adjB[i].first != END_OF_TABLE; ++i)
+        adjB[i].visited = false;
+
+    // Para cada telomero do Genoma A
+    for(int i=1; adjA[i].first != END_OF_TABLE; ++i)
+    {
+        if( adjA[i].isTelomere() && !adjA[i].visited )
+        {
+            int idxLast;
+            int length = getLengthFromA(i, &idxLast);
+
+            Path path = { adjA[i].first, idxLast };
+
+            if( length%2 == 0 )
+                evenPathsFromA.push(path);
+            else {
+                if(length == 1)
+                    adjacencies.push(path);
+                else
+                    oddPaths.push(path);
+            }
+        }
+    }
+
+    // Para cada telomero do Genoma B
+    for(int i=1; adjB[i].first != END_OF_TABLE; ++i)
+    {
+        if( adjB[i].isTelomere() && !adjB[i].visited )
+        {
+            int idxLast;
+            int length = getLengthFromB(i, &idxLast);
+            Path path = { adjB[i].first, idxLast};
+
+            if( length%2 == 0 )
+                evenPathsFromB.push(path);
+            else
+            {
+                std::cerr << "Error: invalid adjacency table!" << std::endl;
+                throw "Error: invalid adjacency table!";
+            }
+
+        }
+    }
+
+    // Se não é telomero
+    for(int i=1; adjB[i].first != END_OF_TABLE; ++i)
+    {
+        if( !adjB[i].isTelomere() && !adjB[i].visited )
+        {
+            int length = getLengthFromB(i);
+            cycles.push(adjB[i].first);
+        }
+    }
+
+}
+
+#define swapCond(a,b) if (a != 0 && b != 0) { temp = a; a = b; b = temp; }
+
+int AdjacencyGraph::getLengthFromA(int i, int *idxLast)
+{
+    int length = 0;
+    int j, k;
+    int temp;
+
+    if (idxLast != NULL) *idxLast = 0;
+
+    do
+    {
+        adjA[i].visited = true;
+
+        if(adjA[i].first > 0)
+            j = locB[adjA[i].first].tail;
+        else
+            j = locB[-adjA[i].first].head;
+
+        adjB[j].visited = true;
+
+        length++;
+
+        if(adjB[j].second == 0)
+        {
+            if (idxLast != NULL) *idxLast = j;
+            break;
+        }
+
+        if(adjA[i].first == adjB[j].first)
+        {
+            if(adjB[j].second > 0)
+                i = locA[adjB[j].second].tail;
+            else
+                i = locA[-adjB[j].second].head;
+
+            if(adjB[j].second == adjA[i].first)
+                swapCond(adjA[i].first, adjA[i].second);
+        }
+        else
+        {
+            if(adjB[j].first > 0)
+                i = locA[adjB[j].first].tail;
+            else
+                i = locA[-adjB[j].first].head;
+
+            if(adjB[j].first == adjA[i].first)
+                swapCond(adjA[i].first, adjA[i].second);
+        }
+
+        length++;
+    } while (adjA[i].second != 0 && !adjA[i].visited);
+
+    if (idxLast != NULL && length % 2 == 0) *idxLast = i;
+
+    return length;
+}
+
+int AdjacencyGraph::getLengthFromB(int i, int *idxLast)
+{
+    int length = 0;
+    int j, k;
+    int temp;
+
+    if (idxLast != NULL) *idxLast = 0;
+
+    do
+    {
+        adjB[i].visited = true;
+
+        if(adjB[i].first > 0)
+            j = locA[adjB[i].first].tail;
+        else
+            j = locA[-adjB[i].first].head;
+
+        adjA[j].visited = true;
+
+        length++;
+
+        if(adjA[j].second == 0)
+        {
+            if (idxLast != NULL) *idxLast = j;
+            break;
+        }
+
+        if(adjB[i].first == adjA[j].first)
+        {
+            if(adjA[j].second > 0)
+                i = locB[adjA[j].second].tail;
+            else
+                i = locB[-adjA[j].second].head;
+
+            if(adjA[j].second == adjB[i].first)
+                swapCond(adjB[i].first, adjB[i].second);
+        }
+        else
+        {
+            if(adjA[j].first > 0)
+                i = locB[adjA[j].first].tail;
+            else
+                i = locB[-adjA[j].first].head;
+
+            if(adjA[j].first == adjB[i].first)
+                swapCond(adjB[i].first, adjB[i].second);
+        }
+
+        length++;
+    } while (adjB[i].second != 0 && !adjB[i].visited);
+
+    if (idxLast != NULL && length % 2 == 0) {
+        adjB[i].visited = true;
+        *idxLast = i;
+    }
+    return length;
+}
+
+void AdjacencyGraph::buildTranslationTable(Adjacency *adj, Location *loc,
+        std::map<int,int> &translationTable,
+        std::map<int,int> &reverseTranslationTable)
+{
+    for(int j=1; adj[j].first != END_OF_TABLE; j++)
+        adj[j].visited = false;
+
+    int numGene = 0;
+
+    for (int j=1; adj[j].first != END_OF_TABLE; j++)
+    {
+        if ( adj[j].visited == false && adj[j].second == 0 )
+        {
+            int last = 0;
+            int k = j;
+            int current;
+            do	{
+                current = adj[k].first;
+                adj[k].visited = true;
+                if ( current == -last )
+                {
+                    current = adj[k].second;
+                }
+                if ( current == 0 )
+                    break;
+                ++numGene;
+                translationTable[current] = numGene;
+                reverseTranslationTable[numGene] = current;
+                translationTable[-current] = -numGene;
+                reverseTranslationTable[-numGene] = -current;
+                k = current > 0 ?
+                        loc[current].head
+                    :
+                        loc[-current].tail; // vai para próximo gene no cromossomo
+                last = current;
+            }	while (true);
+        }
+    }
+    translationTable[0] = 0;
+    reverseTranslationTable[0] = 0;
+}
+
+
+/**
+ * Insere os caps nos cromossomos lineares
+ */
+void AdjacencyGraph::capping()
+{
+    int c, p;
+    int idxc1, idxc2, idxp1, idxp2;
+
+    // Capping para caminhos ímpares:
+
+    while(!oddPaths.empty())
+    {
+        c = oddPaths.front().start;
+
+        // Adicionar:
+        // (n+1)h no inicio do caminho
+        // (n+1)t no final da tabela adjA
+
+        if(c > 0)
+            idxc1 = locA[c].tail;
+        else
+            idxc1 = locA[-c].head;
+
+        adjA[idxc1].second = n+1;
+        locA[n+1].tail = idxc1;
+        adjA[idxEndOfAdjA].first = -(n+1);
+        locA[n+1].head = idxEndOfAdjA;
+        adjA[idxEndOfAdjA].second = 0;
+
+        idxEndOfAdjA++;
+
+        // Adicionar:
+        // (n+1)h no final do caminho
+        // (n+1)t no final da tabela adjB
+
+        idxc2 = oddPaths.front().idxLast;
+
+        adjB[idxc2].second = n+1;
+        locB[n+1].tail = idxc2;
+        adjB[idxEndOfAdjB].first = -(n+1);
+        locB[n+1].head = idxEndOfAdjB;
+        adjB[idxEndOfAdjB].second = 0;
+
+        idxEndOfAdjB++;
+
+        oddPaths.pop();
+
+        cycles.push(c);
+        n++;
+
+    }
+
+    // Capping para caminhos pares:
+
+    while(!evenPathsFromA.empty() || !evenPathsFromB.empty())
+    {
+        if(!evenPathsFromA.empty())
+        {
+            p = evenPathsFromA.front().start;
+
+            // Adicionar:
+            // (n+1)h no inicio do caminho
+            // (n+1)t no final da tabela adjA
+
+            if(p > 0)
+                idxp1 = locA[p].tail;
+            else
+                idxp1 = locA[-p].head;
+
+            adjA[idxp1].second = n+1;
+            locA[n+1].tail = idxp1;
+            adjA[idxEndOfAdjA].first = -(n+1);
+            locA[n+1].head = idxEndOfAdjA;
+            adjA[idxEndOfAdjA].second = 0;
+
+            idxEndOfAdjA++;
+
+            // Adicionar:
+            // (n+2)h no final do caminho
+            // (n+2)t no final da tabela adjA
+
+            idxp2 = evenPathsFromA.front().idxLast;
+
+            adjA[idxp2].second = n+2;
+            locA[n+2].tail = idxp2;
+            adjA[idxEndOfAdjA].first = -(n+2);
+            locA[n+2].head = idxEndOfAdjA;
+            adjA[idxEndOfAdjA].second = 0;
+
+            idxEndOfAdjA++;
+
+            // Nova adjacência em adjB:
+            adjB[idxEndOfAdjB].first = n+1;
+            locB[n+1].tail = idxEndOfAdjB;
+            adjB[idxEndOfAdjB].second = n+2;
+            locB[n+2].tail = idxEndOfAdjB;
+
+            idxEndOfAdjB++;
+
+            // Adicionar:
+            // (n+1)t no final da tabela adjB
+            // (n+2)t no final da tabela adjB
+
+            adjB[idxEndOfAdjB].first = -(n+1);
+            locB[n+1].head = idxEndOfAdjB;
+            adjB[idxEndOfAdjB].second = 0;
+
+            idxEndOfAdjB++;
+
+            adjB[idxEndOfAdjB].first = -(n+2);
+            locB[n+2].head = idxEndOfAdjB;
+            adjB[idxEndOfAdjB].first = 0;
+
+            idxEndOfAdjB++;
+
+            evenPathsFromA.pop();
+
+            cycles.push(p);
+            n = n+2;
+        } // end if(!evenPathsFromA.empty())
+
+        if(!evenPathsFromB.empty())
+        {
+            p = evenPathsFromB.front().start;
+
+            // Adicionar:
+            // (n+1)h no inicio do caminho
+            // (n+1)t no final da tabela adjB
+
+            if(p > 0)
+                idxp1 = locB[p].tail;
+            else
+                idxp1 = locB[-p].head;
+
+            adjB[idxp1].second = n+1;
+            locB[n+1].tail = idxp1;
+            adjB[idxEndOfAdjB].first = -(n+1);
+            locB[n+1].head = idxEndOfAdjB;
+            adjB[idxEndOfAdjB].second = 0;
+
+            idxEndOfAdjB++;
+
+            // Adicionar:
+            // (n+2)h no final do caminho
+            // (n+2)t no final da tabela adjB
+
+            idxp2 = evenPathsFromB.front().idxLast;
+
+            adjB[idxp2].second = n+2;
+            locB[n+2].tail = idxp2;
+            adjB[idxEndOfAdjB].first = -(n+2);
+            locB[n+2].head = idxEndOfAdjB;
+            adjB[idxEndOfAdjB].second = 0;
+
+            idxEndOfAdjB++;
+
+            // Nova adjacência:
+            adjA[idxEndOfAdjA].first = n+1;
+            locA[n+1].tail = idxEndOfAdjA;
+            adjA[idxEndOfAdjA].second = n+2;
+            locA[n+2].tail = idxEndOfAdjA;
+
+            idxEndOfAdjA++;
+
+            // Adicionar:
+            // (n+1)t no final da tabela adjA
+            // (n+2)t no final da tabela adjA
+
+
+            adjA[idxEndOfAdjA].first = -(n+1);
+            locA[n+1].head = idxEndOfAdjA;
+            adjA[idxEndOfAdjA].second = 0;
+
+            idxEndOfAdjA++;
+
+            adjA[idxEndOfAdjA].first = -(n+2);
+            locA[n+2].head = idxEndOfAdjA;
+            adjA[idxEndOfAdjA].second = 0;
+
+            idxEndOfAdjA++;
+
+            evenPathsFromB.pop();
+
+            cycles.push(p);
+            n = n+2;
+        } // end if(!evenPathsFromB.empty())
+    }
 }
 
 /**
@@ -514,13 +992,4 @@ int Adjacency::setMinus(int x)
         return second;
     else
         return first;
-}
-
-std::ostream & operator<<(std::ostream &os, const AdjacencyGraph& ag)
-{
-    for (int i = 1; i <= ag.numAdj; ++i)
-        os << ag.vertex[i].vertex1 << "/"
-           << ag.vertex[i].vertex2 << std::endl;
-
-    return os;
 }

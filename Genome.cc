@@ -12,14 +12,14 @@ Genome::Genome(std::string name)
 int Genome::numGenes()
 {
     int numGenes = 0;
-    
+
     std::vector<Chromosome*>::iterator cIterator;
-            
-    for(cIterator = chromosomes.begin(); 
+
+    for(cIterator = chromosomes.begin();
             cIterator != chromosomes.end(); ++cIterator)
     {
         Chromosome *chr = *cIterator;
-        
+
         numGenes = numGenes + chr->length();
     }
     return numGenes;
@@ -35,3 +35,4 @@ std::ostream & operator<<(std::ostream &os, const Genome& g)
 
     return os;
 }
+
