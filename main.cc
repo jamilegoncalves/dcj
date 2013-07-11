@@ -4,6 +4,28 @@
 
 int main(int argc, char *argv[])
 {
+    Chromosome *a1 = new Chromosome("chrA1", true);
+
+    a1->genes.push_back(-2);
+    a1->genes.push_back(-4);
+    a1->genes.push_back(3);
+    a1->genes.push_back(-6);
+
+    Genome *a = new Genome("Genome A");
+    a->chromosomes.push_back(a1);
+
+    Chromosome *b1 = new Chromosome("chrB1", true);
+
+    b1->genes.push_back(4);
+    b1->genes.push_back(2);
+    b1->genes.push_back(-3);
+    b1->genes.push_back(6);
+
+    Genome *b = new Genome("Genome B");
+    b->chromosomes.push_back(b1);
+
+
+    /*
 		    Chromosome *a1 = new Chromosome("chrA1", true);
 
 		    a1->genes.push_back(1);
@@ -45,7 +67,7 @@ int main(int argc, char *argv[])
 		    Genome *b = new Genome("Genome B");
 		    b->chromosomes.push_back(b1);
 		    b->chromosomes.push_back(b2);
-
+*/
 		    std::cerr << *a << std::endl;
 		    std::cerr << *b << std::endl;
 

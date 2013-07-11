@@ -448,9 +448,45 @@ int AdjacencyGraph::sortByDCJ()
 
 int AdjacencyGraph::sortByRestrictedDCJ()
 {
+    //print();
+    // Teste para os métodos getNextinA(), getPreviousinA(), sameChromosome()
+    // e largestInABetween()
+
+    std::cout << "O proximo marcador após -2 é: " << getNextinA(-2) << std::endl;
+    std::cout << "O proximo marcador após -4 é: " << getNextinA(-4) << std::endl;
+    std::cout << "O proximo marcador após 3 é: " << getNextinA(3) << std::endl;
+    std::cout << "O proximo marcador após -6 é: " << getNextinA(-6) << std::endl;
+
+    std::cout <<"\n";
+
+    std::cout << "O marcador anterior a -2 é: " << getPreviousinA(-2) << std::endl;
+    std::cout << "O marcador anterior a -4 é: " << getPreviousinA(-4) << std::endl;
+    std::cout << "O marcador anterior a 3 é: " << getPreviousinA(3) << std::endl;
+    std::cout << "O marcador anterior a -6 é: " << getPreviousinA(-6) << std::endl;
+
+    std::cout <<"\n";
+
+    std::cout << "Os marcadores -4 e -6 estão no mesmo cromossomo em A? ";
+    if(sameChromosome(-4,-6))
+        std::cout << "verdadeiro" << std::endl;
+    else
+        std::cout << "falso" << std::endl;
+
+    std::cout <<"\n";
+
+    std::cout << "O maior marcador entre -2 e 3 é: " << largestInABetween(-2,3) << std::endl;
+
+    std::cout <<"\n";
+
+    std::cout << "O maior marcador entre -4 e -6 é: " << largestInABetween(-4,-6) << std::endl;
+
+    std::cout <<"\n";
+    
+    /*
     paths();
     capping();
-    print();
+    //print();
+
     std::map<int, int> translationTable, reverseTranslationTable;
 
     buildTranslationTable(adjB, locB, translationTable, reverseTranslationTable);
@@ -463,14 +499,14 @@ int AdjacencyGraph::sortByRestrictedDCJ()
         ++entry_;
     }
 
-    // Renumeração da AdjB
+    // Renumber AdjB
     for(int i = 1; adjB[i].first != END_OF_TABLE; ++i)
     {
         adjB[i].first = translationTable[adjB[i].first];
         adjB[i].second = translationTable[adjB[i].second];
     }
 
-    // Renumeração da AdjA
+    // Renumber AdjA
     for(int i = 1; i < idxEndOfAdjA; i++)
     {
         adjA[i].first = translationTable[adjA[i].first];
@@ -479,7 +515,225 @@ int AdjacencyGraph::sortByRestrictedDCJ()
 
     rebuildLocation(adjA, locA, idxEndOfAdjA);
     rebuildLocation(adjB, locB, idxEndOfAdjB);
-    print();
+
+    for(int i=1; adjA[i].first != END_OF_TABLE; i++)
+        adjA[i].visited = false;
+
+    for (int i=1; adjA[i].first != END_OF_TABLE; i++)
+    {
+        // Procurar telomero com adjA[i].first > 0
+        if ( adjA[i].visited == false && adjA[i].second == 0 && adjA[i].first > 0)
+        {
+            int last = 0;
+            int j = i;
+            int current, nextcurrent;
+            int nextj;
+            bool jsameChromosome = true;
+            bool msameChromosome = true;
+
+            do	{
+                current = adjA[j].first;
+                adjA[j].visited = true;
+                if ( current == -last )
+                {
+                    current = adjA[j].second;
+                }
+                if ( current == 0 )
+                    break;
+
+                // Find j+1 (usar tabela LocA)
+                for(int k=j+1; k<idxEndOfAdjA; ++k)
+                {
+                    if( (adjA[k].first == current+1)
+                            || (adjA[k].first == -(current+1)) )
+                    {
+                        nextcurrent = adjA[k].first;
+                        nextj = k;
+                    }
+                    else if( (adjA[k].second == current+1)
+                            || (adjA[k].second == -(current+1)) )
+                    {
+                        nextcurrent = adjA[k].second;
+                        nextj = k;
+                    }
+                    else if(adjA[k].second == 0)
+                    {
+                        jsameChromosome = false;
+                    }
+                }
+
+                // if j+1 is next to j, we are done! else...
+                if(nextj != j+1)
+                {
+                    // if j, j+1 are in different chromosomes in A
+                    if(jsameChromosome == false)
+                    {
+                        // TODO: translocation j+1 to the same chromosome that j
+                    }
+
+                    // if j, j+1 have different orientations in A
+                    if( ((current > 0) && (nextcurrent < 0))
+                            || ((current < 0) && (nextcurrent > 0)) )
+                    {
+                        // TODO: reversal
+                    }
+                    else
+                    {
+                        // Find m
+                        int m = largestInABetween(current, nextcurrent);
+                        int nextm;
+
+                        // Find m+1
+                        for(int k=nextj+1; k<idxEndOfAdjA; ++k)
+                        {
+                            if( (adjA[k].first == m+1)
+                                    || (adjA[k].first == -(m+1)) )
+                            {
+                                nextm = adjA[k].first;
+                            }
+                            else if( (adjA[k].second == m+1)
+                                    || (adjA[k].second == -(m+1)) )
+                            {
+                                nextm = adjA[k].second;
+
+                            }
+                            else if(adjA[k].second == 0)
+                            {
+                                msameChromosome = false;
+                            }
+                        }
+
+                        // if m+1 is in a different chromosomes in A
+                        if(msameChromosome == false)
+                        {
+                            // TODO: translocation to move m+1 next to m
+                            // TODO: translocation to move j+1 next to j
+                        }
+                        else
+                        {
+                            // if m and m+1 have different orientation
+                            if( ((m > 0) && (nextm < 0))
+                                    || ((m < 0) && (nextm > 0)) )
+                            {
+                                // TODO: reversal to move m+1 next to m
+                                // TODO: reversal to move j+1 next to j
+                            }
+                            // if m and m+1 have positive direction
+                            else if((m > 0) && (nextm > 0))
+                            {
+                                // TODO: block interchange
+                            }
+                        }
+                    }
+                }
+
+                last = current;
+                j++;
+            }	while (true);
+        }
+    }
+    */
+}
+
+bool AdjacencyGraph::sameChromosome(int markerj, int markerk)
+{
+    int idxj;
+
+    if(markerj > 0)
+        idxj = locA[markerj].tail;
+    else
+        idxj = locA[-markerj].head;
+
+    int i = idxj;
+    do {
+        ++i;
+        if(adjA[i].second == markerk)
+            return true;
+    } while (adjA[i].second != 0);
+
+    i = idxj;
+    do {
+        --i;
+        if( (adjA[i].second == markerk) || (adjA[i].first == markerk) )
+            return true;
+    } while (adjA[i].second != 0);
+
+    return false;
+}
+
+int AdjacencyGraph::getNextinA(int marker)
+{
+    int idx;
+
+    if(marker > 0)
+        idx = locA[marker].tail;
+    else
+        idx = locA[-marker].head;
+
+    if(adjA[idx+1].second != 0)
+        return (adjA[idx+1].second);
+    else return (0);
+}
+
+int AdjacencyGraph::getPreviousinA(int marker)
+{
+    int idx;
+    
+    if(marker > 0)
+        idx = locA[marker].tail;
+    else
+        idx = locA[-marker].head;
+
+    if(adjA[idx].second == 0)
+        return 0;
+
+    if(adjA[idx-1].second != 0)
+        return adjA[idx-1].second;
+    else
+        return adjA[idx-1].first;
+}
+
+/**
+ * Retorna o maior valor entre duas posições na tabela de adjacencias
+ */
+int AdjacencyGraph::largestInABetween(int markerj, int markerk)
+{
+    int idxj, idxk;
+
+    if(markerj > 0)
+        idxj = locA[markerj].tail;
+    else
+        idxj = locA[-markerj].head;
+
+    if(markerk > 0)
+        idxk = locA[markerk].tail;
+    else
+        idxk = locA[-markerk].head;
+
+    int maior;
+
+    if(idxj == idxk)
+        return markerj;
+    else if(idxj < idxk)
+    {
+        maior = markerj;
+        for(int i = idxj+1; i <= idxk; ++i)
+        {
+            if(adjA[i].second > maior)
+                maior = adjA[i].second;
+        }
+    }
+    else
+    {
+        maior = markerk;
+        for(int i = idxk; i <= idxj; ++i)
+        {
+            if(adjA[i].second > maior)
+                maior = adjA[i].second;
+        }
+    }
+
+    return maior;
 }
 
 /**

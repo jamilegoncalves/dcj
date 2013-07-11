@@ -99,6 +99,17 @@ class AdjacencyGraph
         std::map<int,int> &translationTable,
         std::map<int,int> &reverseTranslationTable);
 
+    bool sameChromosome(int markerj, int markerk);
+
+    int getNextinA(int marker);
+
+    int getPreviousinA(int marker);
+
+    /**
+     * Retorna o maior valor entre duas posições na tabela de adjacencias
+    */
+    int largestInABetween(int markerj, int markerk);
+
     /**
      * Reconstroi tabela de locação
     */
