@@ -6,25 +6,42 @@ int main(int argc, char *argv[])
 {
     Chromosome *a1 = new Chromosome("chrA1", true);
 
-    a1->genes.push_back(-2);
-    a1->genes.push_back(-4);
+    a1->genes.push_back(1);
+    a1->genes.push_back(2);
     a1->genes.push_back(3);
-    a1->genes.push_back(-6);
+    a1->genes.push_back(8);
+    a1->genes.push_back(9);
+
+    Chromosome *a2 = new Chromosome("chrA2", true);
+
+    a2->genes.push_back(6);
+    a2->genes.push_back(7);
+    a2->genes.push_back(4);
+    a2->genes.push_back(5);
 
     Genome *a = new Genome("Genome A");
     a->chromosomes.push_back(a1);
+    a->chromosomes.push_back(a2);
 
     Chromosome *b1 = new Chromosome("chrB1", true);
 
-    b1->genes.push_back(4);
+    b1->genes.push_back(1);
     b1->genes.push_back(2);
-    b1->genes.push_back(-3);
-    b1->genes.push_back(6);
+    b1->genes.push_back(3);
+    b1->genes.push_back(4);
+    b1->genes.push_back(5);
+
+    Chromosome *b2 = new Chromosome("chrB2", true);
+
+    b2->genes.push_back(6);
+    b2->genes.push_back(7);
+    b2->genes.push_back(8);
+    b2->genes.push_back(9);
 
     Genome *b = new Genome("Genome B");
     b->chromosomes.push_back(b1);
-
-
+    b->chromosomes.push_back(b2);
+    
     /*
 		    Chromosome *a1 = new Chromosome("chrA1", true);
 

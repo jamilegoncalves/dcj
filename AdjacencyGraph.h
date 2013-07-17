@@ -105,6 +105,11 @@ class AdjacencyGraph
 
     int getPreviousinA(int marker);
 
+
+    void reversal(int markerj, int markerk);
+
+    void translocation(int markerj, int markerk);
+
     /**
      * Retorna o maior valor entre duas posições na tabela de adjacencias
     */

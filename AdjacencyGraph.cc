@@ -448,40 +448,10 @@ int AdjacencyGraph::sortByDCJ()
 
 int AdjacencyGraph::sortByRestrictedDCJ()
 {
-    //print();
-    // Teste para os métodos getNextinA(), getPreviousinA(), sameChromosome()
-    // e largestInABetween()
+    print();
+    translocation(8, 4);
+    print();
 
-    std::cout << "O proximo marcador após -2 é: " << getNextinA(-2) << std::endl;
-    std::cout << "O proximo marcador após -4 é: " << getNextinA(-4) << std::endl;
-    std::cout << "O proximo marcador após 3 é: " << getNextinA(3) << std::endl;
-    std::cout << "O proximo marcador após -6 é: " << getNextinA(-6) << std::endl;
-
-    std::cout <<"\n";
-
-    std::cout << "O marcador anterior a -2 é: " << getPreviousinA(-2) << std::endl;
-    std::cout << "O marcador anterior a -4 é: " << getPreviousinA(-4) << std::endl;
-    std::cout << "O marcador anterior a 3 é: " << getPreviousinA(3) << std::endl;
-    std::cout << "O marcador anterior a -6 é: " << getPreviousinA(-6) << std::endl;
-
-    std::cout <<"\n";
-
-    std::cout << "Os marcadores -4 e -6 estão no mesmo cromossomo em A? ";
-    if(sameChromosome(-4,-6))
-        std::cout << "verdadeiro" << std::endl;
-    else
-        std::cout << "falso" << std::endl;
-
-    std::cout <<"\n";
-
-    std::cout << "O maior marcador entre -2 e 3 é: " << largestInABetween(-2,3) << std::endl;
-
-    std::cout <<"\n";
-
-    std::cout << "O maior marcador entre -4 e -6 é: " << largestInABetween(-4,-6) << std::endl;
-
-    std::cout <<"\n";
-    
     /*
     paths();
     capping();
@@ -735,6 +705,102 @@ int AdjacencyGraph::largestInABetween(int markerj, int markerk)
 
     return maior;
 }
+
+/**
+ * Reversal
+ */
+
+void AdjacencyGraph::reversal(int markerj, int markerk)
+{
+    int idxj, idxk;
+
+    if(markerj > 0)
+        idxj = locA[markerj].tail;
+    else
+        idxj = locA[-markerj].head;
+    
+    if(markerk > 0)
+        idxk = locA[markerk].tail;
+    else
+        idxk = locA[-markerk].head +1;
+    
+    int j = idxj;
+    int k = idxk;
+    int temp;
+    
+    while(j <= k)
+    {
+        temp = adjA[j].second;
+        adjA[j].second = adjA[k].first;
+        adjA[k].first = temp;
+        j++;
+        k--;
+    }
+    
+    j = idxj + 1;
+    k = idxk - 1;
+    
+    while(j <= k)
+    {
+        temp = adjA[j].first;
+        adjA[j].first = adjA[k].second;
+        adjA[k].second = temp;
+        j++;
+        k--;
+    }
+}
+
+/**
+ * Translocation
+ */
+
+void AdjacencyGraph::translocation(int markerj, int markerk)
+{
+    int idxj, idxk;
+
+    if(markerj > 0)
+        idxj = locA[markerj].tail;
+    else
+        idxj = locA[-markerj].head;
+
+    if(markerk > 0)
+        idxk = locA[markerk].tail;
+    else
+        idxk = locA[-markerk].head;
+
+    int j = idxj - 1;
+    int k = idxk - 1;
+    int temp;
+
+    do {
+        j++;
+        k++;
+
+        if(adjA[j].second == markerj)
+        {
+            temp = adjA[j].second;
+            adjA[j].second = adjA[k].second;
+            adjA[k].second = temp;
+        }
+        else if (adjA[j].second == 0)
+        {
+            temp = adjA[j].first;
+            adjA[j].first = adjA[k].first;
+            adjA[k].first = temp;
+        }
+        else
+        {
+            temp = adjA[j].first;
+            adjA[j].first = adjA[k].first;
+            adjA[k].first = temp;
+            temp = adjA[j].second;
+            adjA[j].second = adjA[k].second;
+            adjA[k].second = temp;
+        }
+
+    } while ( (adjA[j].second != 0) && (adjA[k].second != 0) );
+}
+
 
 /**
  * Reconstroi tabela de locação
