@@ -48,12 +48,15 @@ class AdjacencyGraph
     AdjacencyGraph(Genome *a, Genome *b);
     ~AdjacencyGraph();
     int totalAdjacencies(Genome *g);
+    void prettyPrintA(std::ostream &os);
 
     int sortByDCJ();
 
     int DCJdistance();
 
     int sortByRestrictedDCJ();
+
+    bool differentOrientationinA(int m, int mPlus1);
 
 /**
 * Prints the representation of this AdjacencyGraph to a
@@ -106,9 +109,12 @@ class AdjacencyGraph
     int getPreviousinA(int marker);
 
 
-    void reversal(int markerj, int markerk);
+    void reversal(Adjacency *j, Adjacency *k, int m);
 
-    void translocation(int markerj, int markerk);
+    void translocation(Adjacency *j, Adjacency *k, int m);
+
+    void blockInterchange(Adjacency *a, Adjacency *b, Adjacency *c, Adjacency *d, int j, int m);
+
 
     /**
      * Retorna o maior valor entre duas posições na tabela de adjacencias
