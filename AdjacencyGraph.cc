@@ -448,7 +448,7 @@ int AdjacencyGraph::sortByDCJ()
 
     return dist;
 }
-/*
+
 void AdjacencyGraph::prettyPrintA(std::ostream &os)
 {
     bool visited[n+1];
@@ -473,7 +473,6 @@ void AdjacencyGraph::prettyPrintA(std::ostream &os)
     }
     os << std::endl;
 }
-*/
 
 int AdjacencyGraph::sortByRestrictedDCJ()
 {
@@ -528,17 +527,19 @@ int AdjacencyGraph::sortByRestrictedDCJ()
     // a chromosome in Π to (ki , ki + 1, . . . , j ),
     // we extend it by moving j + 1 next to j. "
 
-    //int oldDistance = -1;
+#ifdef DEBUG
+    int oldDistance = -1;
+#endif
 
     for (int j=1; j < n; j++)
     {
-/*#ifndef NOPRINT
+#ifdef DEBUG
         if (oldDistance != distance)
         {
             prettyPrintA(std::cerr);
             oldDistance = distance;
         }
-#endif*/
+#endif
         int idxj = locA[j].head;
         int idxjplus1 = locA[j+1].tail;
 
@@ -548,8 +549,8 @@ int AdjacencyGraph::sortByRestrictedDCJ()
             // 2. if j, j+1 are in different chromosomes in A
             if(!sameChromosome(j,j+1))
             {
-                // Translocation j+1 to the same chromosome that j
-                translocation(&adjA[idxj], &adjA[idxjplus1], -j);
+                // Translocation that brings j+1 close to j
+                translocation(j);
                 ++distance;
             }
             else
@@ -557,8 +558,8 @@ int AdjacencyGraph::sortByRestrictedDCJ()
                 // 3. if j, j+1 have different orientations in A
                 if(differentOrientationinA(j, j+1))
                 {
-                    // Reversal
-                    reversal(&adjA[idxj], &adjA[idxjplus1], -j);
+                    // Reversal that brings j and j+1 together
+                    reversal(j);
                     ++distance;
                 }
                 else
@@ -574,12 +575,12 @@ int AdjacencyGraph::sortByRestrictedDCJ()
                     if(!sameChromosome(m, m+1))
                     {
                         // Translocation to move m+1 next to m
-                        translocation(&adjA[idxm], &adjA[idxmplus1], -m);
+                        translocation(m);
                         ++distance;
 
                         idxjplus1 = locA[j+1].tail; /// Alterei!!!!
                         // Translocation to move j+1 next to j
-                        translocation(&adjA[idxj], &adjA[idxjplus1], -j);
+                        translocation(j);
                         print();
                         ++distance;
                     }
@@ -591,10 +592,10 @@ int AdjacencyGraph::sortByRestrictedDCJ()
                         // 5. if m and m+1 have different orientation
                         if(differentOrientationinA(m, m+1))
                         {
-                            // Reversal
-                            reversal(&adjA[idxm], &adjA[idxmplus1], -m);
+                            // Reversal that brings m and m+1 together
+                            reversal(m);
                             ++distance;
-                            reversal(&adjA[idxj], &adjA[idxjplus1], -j);
+                            reversal(j);
                             ++distance;
                         }
                         else
@@ -603,8 +604,7 @@ int AdjacencyGraph::sortByRestrictedDCJ()
                             // Block interchange
                             if(m>0)
                             {
-                                blockInterchange(&adjA[idxj], &adjA[idxm],
-                                        &adjA[idxjplus1], &adjA[idxmplus1], -j, -m);
+                                blockInterchange(j, m);
                                 ++distance;
                                 ++distance;
                             }
@@ -613,8 +613,7 @@ int AdjacencyGraph::sortByRestrictedDCJ()
                                 idxm = locA[m].tail;
                                 idxmplus1 = locA[m+1].head;
 
-                                blockInterchange(&adjA[idxj], &adjA[idxm],
-                                        &adjA[idxjplus1], &adjA[idxmplus1], -j, m);
+                                blockInterchange(j, m);
                                 ++distance;
                                 ++distance;
                             }
@@ -671,7 +670,7 @@ int AdjacencyGraph::getNextinA(int marker)
 int AdjacencyGraph::getPreviousinA(int marker)
 {
     int idx;
-    
+
     if(marker > 0)
         idx = locA[marker].tail;
     else
@@ -699,20 +698,16 @@ int AdjacencyGraph::largestInABetween(int left, int right)
  * Reversal
  */
 
-void AdjacencyGraph::reversal(Adjacency *j, Adjacency *k, int m)
+void AdjacencyGraph::reversal(int m)
 {
     int idxj, idxk;
     int temp;
 
-    if(j->first > 0)
-        idxj = locA[j->first].tail;
-    else
-        idxj = locA[-j->first].head;
+    idxj = locA[abs(m)].head;
+    Adjacency *j = &adjA[idxj];
 
-    if(k->second > 0)
-        idxk = locA[k->second].tail;
-    else
-        idxk = locA[-k->second].head;
+    idxk = locA[abs(m)+1].tail;
+    Adjacency *k = &adjA[idxk];
 
     if( j->equals(adjA[idxj]) && k->equals(adjA[idxk]) )
     {
@@ -805,104 +800,97 @@ void AdjacencyGraph::reversal(Adjacency *j, Adjacency *k, int m)
  * Translocation
  */
 
-void AdjacencyGraph::translocation(Adjacency *j, Adjacency *k, int m)
+void AdjacencyGraph::translocation(int m)
 {
     int idxj, idxk;
     int temp;
 
-    if(j->first > 0)
-        idxj = locA[j->first].tail;
-    else
-        idxj = locA[-j->first].head;
+    idxj = locA[abs(m)].head;
+    Adjacency *j = &adjA[idxj];
 
-    if(k->second > 0)
-        idxk = locA[k->second].tail;
-    else
-        idxk = locA[-k->second].head;
+    idxk = locA[abs(m)+1].tail;
+    Adjacency *k = &adjA[idxk];
 
-    if( j->equals(adjA[idxj]) && k->equals(adjA[idxk]) )
+    if(adjA[idxj].first == m)
     {
-        if(adjA[idxj].first == m)
+        if(adjA[idxk].first == abs(m)+1)
         {
-            if(adjA[idxk].first == abs(m)+1)
-            {
-                temp = adjA[idxj].second;
-                adjA[idxj].second = adjA[idxk].first;
+            temp = adjA[idxj].second;
+            adjA[idxj].second = adjA[idxk].first;
 
-                // Altero a Tabela LocA:
-                if(adjA[idxk].first > 0)
-                    locA[adjA[idxk].first].tail = idxj;
-                else
-                    locA[-adjA[idxk].first].head = idxj;
-
-                adjA[idxk].first = temp;
-
-                // Altero a Tabela LocA:
-                if(temp > 0)
-                    locA[temp].tail = idxk;
-                else
-                    locA[-temp].head = idxk;
-            }
+            // Altero a Tabela LocA:
+            if(adjA[idxk].first > 0)
+                locA[adjA[idxk].first].tail = idxj;
             else
-            {
-                temp = adjA[idxj].second;
-                adjA[idxj].second = adjA[idxk].second;
+                locA[-adjA[idxk].first].head = idxj;
 
-                // Altero a Tabela LocA:
-                if(adjA[idxk].second > 0)
-                    locA[adjA[idxk].second].tail = idxj;
-                else
-                    locA[-adjA[idxk].second].head = idxj;
+            adjA[idxk].first = temp;
 
-                adjA[idxk].second = temp;
-
-                // Altero a Tabela LocA:
-                if(temp > 0)
-                    locA[temp].tail = idxk;
-                else
-                    locA[-temp].head = idxk;
-            }
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                locA[temp].tail = idxk;
+            else
+                locA[-temp].head = idxk;
         }
         else
         {
-            if(adjA[idxk].first == abs(m)+1)
-            {
-                temp = adjA[idxj].first;
-                adjA[idxj].first = adjA[idxk].first;
+            temp = adjA[idxj].second;
+            adjA[idxj].second = adjA[idxk].second;
 
-                // Altero a Tabela LocA:
-                if(adjA[idxk].first > 0)
-                    locA[adjA[idxk].first].tail = idxj;
-                else
-                    locA[-adjA[idxk].first].head = idxj;
-
-                adjA[idxk].first = temp;
-
-                // Altero a Tabela LocA:
-                if(temp > 0)
-                    locA[temp].tail = idxk;
-                else
-                    locA[-temp].head = idxk;
-            }
+            // Altero a Tabela LocA:
+            if(adjA[idxk].second > 0)
+                locA[adjA[idxk].second].tail = idxj;
             else
-            {
-                temp = adjA[idxj].first;
-                adjA[idxj].first = adjA[idxk].second;
+                locA[-adjA[idxk].second].head = idxj;
 
-                // Altero a Tabela LocA:
-                if(adjA[idxk].second > 0)
-                    locA[adjA[idxk].second].tail = idxj;
-                else
-                    locA[-adjA[idxk].second].head = idxj;
+            adjA[idxk].second = temp;
 
-                adjA[idxk].second = temp;
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                locA[temp].tail = idxk;
+            else
+                locA[-temp].head = idxk;
+        }
+    }
+    else
+    {
+        if(adjA[idxk].first == abs(m)+1)
+        {
+            temp = adjA[idxj].first;
+            adjA[idxj].first = adjA[idxk].first;
 
-                // Altero a Tabela LocA:
-                if(temp > 0)
-                    locA[temp].tail = idxk;
-                else
-                    locA[-temp].head = idxk;
-            }
+            // Altero a Tabela LocA:
+            if(adjA[idxk].first > 0)
+                locA[adjA[idxk].first].tail = idxj;
+            else
+                locA[-adjA[idxk].first].head = idxj;
+
+            adjA[idxk].first = temp;
+
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                locA[temp].tail = idxk;
+            else
+                locA[-temp].head = idxk;
+        }
+        else
+        {
+            temp = adjA[idxj].first;
+            adjA[idxj].first = adjA[idxk].second;
+
+            // Altero a Tabela LocA:
+            if(adjA[idxk].second > 0)
+                locA[adjA[idxk].second].tail = idxj;
+            else
+                locA[-adjA[idxk].second].head = idxj;
+
+            adjA[idxk].second = temp;
+
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                locA[temp].tail = idxk;
+            else
+                locA[-temp].head = idxk;
         }
     }
 }
@@ -910,11 +898,22 @@ void AdjacencyGraph::translocation(Adjacency *j, Adjacency *k, int m)
 /**
  * Block Interchange (criação do circular intermediário)
  */
-void AdjacencyGraph::blockInterchange(Adjacency *a, Adjacency *b,
-                                        Adjacency *c, Adjacency *d, int j, int m)
+void AdjacencyGraph::blockInterchange(int j, int m)
 {
     int idxa, idxb, idxc, idxd;
     int temp;
+
+    idxa = locA[abs(j)].head;
+    Adjacency *a = &adjA[idxa];
+
+    idxb = locA[abs(j)+1].tail;
+    Adjacency *b = &adjA[idxb];
+
+    idxc = locA[abs(m)].head;
+    Adjacency *c = &adjA[idxc];
+
+    idxd = locA[abs(m)+1].tail;
+    Adjacency *d = &adjA[idxd];
 
     if(a->first > 0)
         idxa = locA[a->first].tail;
@@ -953,7 +952,7 @@ void AdjacencyGraph::blockInterchange(Adjacency *a, Adjacency *b,
                     locA[-adjA[idxc].first].head = idxa;
 
                 adjA[idxc].first = temp;
-                    
+
                 // Altero a Tabela LocA:
                 if(temp > 0)
                     locA[temp].tail = idxc;

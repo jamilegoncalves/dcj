@@ -109,11 +109,11 @@ class AdjacencyGraph
     int getPreviousinA(int marker);
 
 
-    void reversal(Adjacency *j, Adjacency *k, int m);
+    void reversal(int m);
 
-    void translocation(Adjacency *j, Adjacency *k, int m);
+    void translocation(int m);
 
-    void blockInterchange(Adjacency *a, Adjacency *b, Adjacency *c, Adjacency *d, int j, int m);
+    void blockInterchange(int j, int m);
 
 
     /**
