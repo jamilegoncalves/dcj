@@ -72,12 +72,12 @@ void AdjacencyGraph::printAdjacencies(std::ostream &os)
     {
         os << "LocA:" << std::endl;
         os << "head:";
-        for(int i = 1; i <= 16; ++i)
+        for(int i = 1; i <= 31; ++i)
             os << "\t" << locA[i].head;
         os << std::endl;
 
         os << "tail:";
-        for(int i = 1; i <= 16; ++i)
+        for(int i = 1; i <= 31; ++i)
             os << "\t" << locA[i].tail;
         os << std::endl;
     }
@@ -103,12 +103,12 @@ void AdjacencyGraph::printAdjacencies(std::ostream &os)
         os << std::endl;
         os << "LocB:" << std::endl;
         os << "head:";
-        for(int i = 1; i <= 16; ++i)
+        for(int i = 1; i <= 31; ++i)
             os << "\t" << locB[i].head;
         os << std::endl;
 
         os << "tail:";
-        for(int i = 1; i <= 16; ++i)
+        for(int i = 1; i <= 31; ++i)
             os << "\t" << locB[i].tail;
         os << std::endl;
     }
@@ -476,9 +476,11 @@ void AdjacencyGraph::prettyPrintA(std::ostream &os)
 
 int AdjacencyGraph::sortByRestrictedDCJ()
 {
+    //print();
     int distance=0;
     paths();
     capping();
+    //print();
 
     // Calcula e aplica a tabela de tradução:
 
@@ -518,7 +520,7 @@ int AdjacencyGraph::sortByRestrictedDCJ()
     rebuildLocation(adjA, locA, idxEndOfAdjA);
     rebuildLocation(adjB, locB, idxEndOfAdjB);
 
-    print();
+    //print();
 
     // Procure na tabela de adjacência de A um telômero não visitado +x, 0:
 
@@ -542,7 +544,7 @@ int AdjacencyGraph::sortByRestrictedDCJ()
 #endif
         int idxj = locA[j].head;
         int idxjplus1 = locA[j+1].tail;
-
+        //print();
         // 1. if j+1 is next to j, we are done
         if ( !adjA[idxj].equals(adjB[locB[j].head]) )
         {
@@ -578,10 +580,9 @@ int AdjacencyGraph::sortByRestrictedDCJ()
                         translocation(m);
                         ++distance;
 
-                        idxjplus1 = locA[j+1].tail; /// Alterei!!!!
+                        idxjplus1 = locA[j+1].tail;
                         // Translocation to move j+1 next to j
                         translocation(j);
-                        print();
                         ++distance;
                     }
                     else
@@ -597,6 +598,7 @@ int AdjacencyGraph::sortByRestrictedDCJ()
                             ++distance;
                             reversal(j);
                             ++distance;
+                            //print();
                         }
                         else
                         {
@@ -604,18 +606,16 @@ int AdjacencyGraph::sortByRestrictedDCJ()
                             // Block interchange
                             if(m>0)
                             {
-                                blockInterchange(j, m);
+                                blockInterchangePositiveM(j, m);//***
                                 ++distance;
                                 ++distance;
+                                print();
                             }
                             else
                             {
-                                idxm = locA[m].tail;
-                                idxmplus1 = locA[m+1].head;
-
-                                blockInterchange(j, m);
+                                blockInterchangeNegativeM(j, m);
                                 ++distance;
-                                ++distance;
+                                ++distance;   
                             }
                         }
                     }
@@ -623,6 +623,7 @@ int AdjacencyGraph::sortByRestrictedDCJ()
             }
         }
     }
+    
     return distance;
 }
 
@@ -646,6 +647,15 @@ bool AdjacencyGraph::sameChromosome(int markerj, int markerk)
             i = getNextinA(i))
     {
         ++j;
+    }
+
+    if(i == 0)
+    {
+        for(i = getPreviousinA(markerj); (i!= 0)&&(abs(i) != abs(markerk));
+                i = getPreviousinA(i))
+        {
+            ++j;
+        }
     }
 
     if(i == 0)
@@ -709,89 +719,86 @@ void AdjacencyGraph::reversal(int m)
     idxk = locA[abs(m)+1].tail;
     Adjacency *k = &adjA[idxk];
 
-    if( j->equals(adjA[idxj]) && k->equals(adjA[idxk]) )
+    if(abs(adjA[idxj].first) == abs(m))
     {
-        if(adjA[idxj].first == m)
+        if(abs(adjA[idxk].second) == abs(m)+1)
         {
-            if(adjA[idxk].second == abs(m)+1)
-            {
-                temp = adjA[idxj].second;
-                adjA[idxj].second = adjA[idxk].second;
+            temp = adjA[idxj].second;
+            adjA[idxj].second = adjA[idxk].second;
 
-                // Altero a Tabela LocA:
-                if(adjA[idxk].second > 0)
-                    locA[adjA[idxk].second].tail = idxj;
-                else
-                    locA[-adjA[idxk].second].head = idxj;
-
-                adjA[idxk].second = temp;
-
-                // Altero a Tabela LocA:
-                if(temp > 0)
-                    locA[temp].tail = idxk;
-                else
-                    locA[-temp].head = idxk;
-            }
+            // Altero a Tabela LocA:
+            if(adjA[idxk].second > 0)
+                locA[adjA[idxk].second].tail = idxj;
             else
-            {
-                temp = adjA[idxj].second;
-                adjA[idxj].second = adjA[idxk].first;
+                locA[-adjA[idxk].second].head = idxj;
 
-                // Altero a Tabela LocA:
-                if(adjA[idxk].first > 0)
-                    locA[adjA[idxk].first].tail = idxj;
-                else
-                    locA[-adjA[idxk].first].head = idxj;
+            adjA[idxk].second = temp;
 
-                adjA[idxk].first = temp;
-
-                // Altero a Tabela LocA:
-                if(temp > 0)
-                    locA[temp].tail = idxk;
-                else
-                    locA[-temp].head = idxk;
-            }
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                locA[temp].tail = idxk;
+            else
+                locA[-temp].head = idxk;
         }
         else
         {
-            if(adjA[idxk].second == abs(m)+1)
-            {
-                temp = adjA[idxj].first;
-                adjA[idxj].first = adjA[idxk].second;
+            temp = adjA[idxj].second;
+            adjA[idxj].second = adjA[idxk].first;
 
-                // Altero a Tabela LocA:
-                if(adjA[idxk].second > 0)
-                    locA[adjA[idxk].second].tail = idxj;
-                else
-                    locA[-adjA[idxk].second].head = idxj;
-
-                adjA[idxk].second = temp;
-
-                // Altero a Tabela LocA:
-                if(temp > 0)
-                    locA[temp].tail = idxk;
-                else
-                    locA[-temp].head = idxk;
-            }
+            // Altero a Tabela LocA:
+            if(adjA[idxk].first > 0)
+                locA[adjA[idxk].first].tail = idxj;
             else
-            {
-                temp = adjA[idxj].first;
-                adjA[idxj].first = adjA[idxk].first;
+                locA[-adjA[idxk].first].head = idxj;
 
-                // Altero a Tabela LocA:
-                if(adjA[idxk].first > 0)
-                    locA[adjA[idxk].first].tail = idxj;
-                else
-                    locA[-adjA[idxk].first].head = idxj;
+            adjA[idxk].first = temp;
 
-                adjA[idxk].first = temp;
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                locA[temp].tail = idxk;
+            else
+                locA[-temp].head = idxk;
+        }
+    }
+    else
+    {
+        if(abs(adjA[idxk].second) == abs(m)+1)
+        {
+            temp = adjA[idxj].first;
+            adjA[idxj].first = adjA[idxk].second;
 
-                // Altero a Tabela LocA:
-                if(temp > 0)
-                    locA[temp].tail = idxk;
-                else
-                    locA[-temp].head = idxk;
-            }
+            // Altero a Tabela LocA:
+            if(adjA[idxk].second > 0)
+                locA[adjA[idxk].second].tail = idxj;
+            else
+                locA[-adjA[idxk].second].head = idxj;
+
+            adjA[idxk].second = temp;
+
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                locA[temp].tail = idxk;
+            else
+                locA[-temp].head = idxk;
+        }
+        else
+        {
+            temp = adjA[idxj].first;
+            adjA[idxj].first = adjA[idxk].first;
+
+            // Altero a Tabela LocA:
+            if(adjA[idxk].first > 0)
+                locA[adjA[idxk].first].tail = idxj;
+            else
+                locA[-adjA[idxk].first].head = idxj;
+
+            adjA[idxk].first = temp;
+
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                locA[temp].tail = idxk;
+            else
+                locA[-temp].head = idxk;
         }
     }
 }
@@ -811,9 +818,9 @@ void AdjacencyGraph::translocation(int m)
     idxk = locA[abs(m)+1].tail;
     Adjacency *k = &adjA[idxk];
 
-    if(adjA[idxj].first == m)
+    if(abs(adjA[idxj].first) == abs(m))
     {
-        if(adjA[idxk].first == abs(m)+1)
+        if(abs(adjA[idxk].first) == abs(m)+1)
         {
             temp = adjA[idxj].second;
             adjA[idxj].second = adjA[idxk].first;
@@ -854,7 +861,7 @@ void AdjacencyGraph::translocation(int m)
     }
     else
     {
-        if(adjA[idxk].first == abs(m)+1)
+        if(abs(adjA[idxk].first) == abs(m)+1)
         {
             temp = adjA[idxj].first;
             adjA[idxj].first = adjA[idxk].first;
@@ -898,216 +905,384 @@ void AdjacencyGraph::translocation(int m)
 /**
  * Block Interchange (criação do circular intermediário)
  */
-void AdjacencyGraph::blockInterchange(int j, int m)
+void AdjacencyGraph::blockInterchangePositiveM(int j, int m)
 {
-    int idxa, idxb, idxc, idxd;
+    int idxJ, idxJplus1, idxM, idxMplus1;
     int temp;
 
-    idxa = locA[abs(j)].head;
-    Adjacency *a = &adjA[idxa];
+    idxJ = locA[abs(j)].head;
+    Adjacency *adjJ = &adjA[idxJ];
 
-    idxb = locA[abs(j)+1].tail;
-    Adjacency *b = &adjA[idxb];
+    idxJplus1 = locA[abs(j)+1].tail;
+    Adjacency *adjJplus1 = &adjA[idxJplus1];
 
-    idxc = locA[abs(m)].head;
-    Adjacency *c = &adjA[idxc];
+    idxM = locA[abs(m)].head;
+    Adjacency *adjM = &adjA[idxM];
 
-    idxd = locA[abs(m)+1].tail;
-    Adjacency *d = &adjA[idxd];
-
-    if(a->first > 0)
-        idxa = locA[a->first].tail;
-    else
-        idxa = locA[-a->first].head;
-
-    if(b->second > 0)
-        idxb = locA[b->second].tail;
-    else
-        idxb = locA[-b->second].head;
-
-    if(c->second > 0)
-        idxc = locA[c->second].tail;
-    else
-        idxc = locA[-c->second].head;
-
-    if(d->second > 0)
-        idxd = locA[d->second].tail;
-    else
-        idxd = locA[-d->second].head;
+    idxMplus1 = locA[abs(m)+1].tail;
+    Adjacency *adjMplus1 = &adjA[idxMplus1];
 
     // trazer j+1 para j
-    if( a->equals(adjA[idxa]) && c->equals(adjA[idxc]) )
+    if(adjA[idxJ].first == -j)
     {
-        if(adjA[idxa].first == j)
+        if(abs(adjA[idxJplus1].first) == abs(j)+1)
         {
-            if(adjA[idxc].first == abs(j)+1)
-            {
-                temp = adjA[idxa].second;
-                adjA[idxa].second = adjA[idxc].first;
+            temp = adjA[idxJ].second;
+            adjA[idxJ].second = adjA[idxJplus1].first;
 
-                // Altero a Tabela LocA:
-                if(adjA[idxc].first > 0)
-                    locA[adjA[idxc].first].tail = idxa;
-                else
-                    locA[-adjA[idxc].first].head = idxa;
-
-                adjA[idxc].first = temp;
-
-                // Altero a Tabela LocA:
-                if(temp > 0)
-                    locA[temp].tail = idxc;
-                else
-                    locA[-temp].head = idxc;
-            }
+            // Altero a Tabela LocA:
+            if(adjA[idxJplus1].first > 0)
+                locA[adjA[idxJplus1].first].tail = idxJ;
             else
-            {
-                temp = adjA[idxa].second;
-                adjA[idxa].second = adjA[idxc].second;
+                locA[-adjA[idxJplus1].first].head = idxJ;
 
-                // Altero a Tabela LocA:
-                if(adjA[idxc].second > 0)
-                    locA[adjA[idxc].second].tail = idxa;
-                else
-                    locA[-adjA[idxc].second].head = idxa;
+            adjA[idxJplus1].first = temp;
 
-                adjA[idxc].second = temp;
-
-                // Altero a Tabela LocA:
-                if(temp > 0)
-                    locA[temp].tail = idxc;
-                else
-                    locA[-temp].head = idxc;
-            }
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                locA[temp].tail = idxJplus1;
+            else
+                locA[-temp].head = idxJplus1;
         }
         else
         {
-            if(adjA[idxc].first == abs(j)+1)
-            {
-                temp = adjA[idxa].first;
-                adjA[idxa].first = adjA[idxc].first;
+            temp = adjA[idxJ].second;//***
+            adjA[idxJ].second = adjA[idxJplus1].second;
 
-                // Altero a Tabela LocA:
-                if(adjA[idxc].first > 0)
-                    locA[adjA[idxc].first].tail = idxc;
-                else
-                    locA[-adjA[idxc].first].head = idxc;
-
-                adjA[idxc].first = temp;
-
-                // Altero a Tabela LocA:
-                if(temp > 0)
-                    locA[temp].tail = idxa;
-                else
-                    locA[-temp].head = idxa;
-            }
+            // Altero a Tabela LocA:
+            if(adjA[idxJplus1].second > 0)
+                locA[adjA[idxJplus1].second].tail = idxJ;
             else
-            {
-                temp = adjA[idxa].first;
-                adjA[idxa].first = adjA[idxc].second;
+                locA[-adjA[idxJplus1].second].head = idxJ;
 
-                // Altero a Tabela LocA:
-                if(adjA[idxc].second > 0)
-                    locA[adjA[idxc].second].tail = idxc;
-                else
-                    locA[-adjA[idxc].second].head = idxc;
+            adjA[idxJplus1].second = temp;
 
-                adjA[idxc].second = temp;
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                locA[temp].tail = idxJplus1;
+            else
+                locA[-temp].head = idxJplus1;
+        }
+    }
+    else
+    {
+        if(abs(adjA[idxJplus1].first) == abs(j)+1)
+        {
+            temp = adjA[idxJ].first;
+            adjA[idxJ].first = adjA[idxJplus1].first;
 
-                // Altero a Tabela LocA:
-                if(temp > 0)
-                    locA[temp].tail = idxa;
-                else
-                    locA[-temp].head = idxa;
-            }
+            // Altero a Tabela LocA:
+            if(adjA[idxJplus1].first > 0)
+                locA[adjA[idxJplus1].first].tail = idxJ;
+            else
+                locA[-adjA[idxJplus1].first].head = idxJ;
+
+            adjA[idxJplus1].first = temp;
+
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                locA[temp].tail = idxJplus1;
+            else
+                locA[-temp].head = idxJplus1;
+        }
+        else
+        {
+            temp = adjA[idxJ].first;
+            adjA[idxJ].first = adjA[idxJplus1].second;
+
+            // Altero a Tabela LocA:
+            if(adjA[idxJplus1].second > 0)
+                locA[adjA[idxJplus1].second].tail = idxJ;
+            else
+                locA[-adjA[idxJplus1].second].head = idxJ;
+
+            adjA[idxJplus1].second = temp;
+
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                locA[temp].tail = idxJ;
+            else
+                locA[-temp].head = idxJ;
         }
     }
 
     // trazer m+1 para m
-    if( b->equals(adjA[idxb]) && d->equals(adjA[idxd]) )
+    if(adjA[idxM].first == -m)
     {
-        if(adjA[idxb].first == m)
+        if(abs(adjA[idxMplus1].first) == abs(m)+1)
         {
-            if(adjA[idxd].first == abs(m)+1)
+            temp = adjA[idxM].second;
+            adjA[idxM].second = adjA[idxMplus1].first;// Bug
+
+            // Altero a Tabela LocA:
+            if(adjA[idxMplus1].second > 0)
+                locA[adjA[idxMplus1].second].tail = idxM;
+            else
+                locA[-adjA[idxMplus1].second].head = idxM;
+
+            adjA[idxMplus1].first = temp;
+
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                locA[temp].tail = idxMplus1;
+            else
+                locA[-temp].head = idxMplus1;
+
+        }
+        else
+        {
+            temp = adjA[idxM].second;//***
+            adjA[idxM].second = adjA[idxMplus1].second;
+
+            // Altero a Tabela LocA:
+            if(adjA[idxMplus1].second > 0)
+                locA[adjA[idxMplus1].second].tail = idxM;
+            else
+                locA[-adjA[idxMplus1].second].head = idxM;
+
+            adjA[idxMplus1].second = temp;
+
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                locA[temp].tail = idxMplus1;
+            else
+                locA[-temp].head = idxMplus1;
+        }
+    }
+    else
+    {
+        if(abs(adjA[idxMplus1].first) == abs(m)+1)
+        {
+            temp = adjA[idxM].first;
+            adjA[idxM].first = adjA[idxMplus1].first;
+
+
+            // Altero a Tabela LocA:
+            if(adjA[idxMplus1].first > 0)
+                locA[adjA[idxMplus1].first].tail = idxM;
+            else
+                locA[-adjA[idxMplus1].first].head = idxM;
+
+            adjA[idxMplus1].first = temp;
+
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                 locA[temp].tail = idxMplus1;
+            else
+                locA[-temp].head = idxMplus1;
+        }
+        else
+        {
+            temp = adjA[idxM].first;
+            adjA[idxM].first = adjA[idxMplus1].second;
+
+            // Altero a Tabela LocA:
+            if(adjA[idxMplus1].second > 0)
+                locA[adjA[idxMplus1].second].tail = idxM;
+            else
+                locA[-adjA[idxMplus1].second].head = idxM;
+
+            adjA[idxMplus1].second = temp;
+
+            // Altero a Tabela LocA:
+            if(temp > 0)
+                locA[temp].tail = idxMplus1;
+            else
+                locA[-temp].head = idxMplus1;
+        }
+    }
+}
+
+/**
+ * Block Interchange (criação do circular intermediário)
+ */
+void AdjacencyGraph::blockInterchangeNegativeM(int j, int m)
+{
+    int idxJ, idxJplus1, idxM, idxMplus1;
+    int temp;
+
+    idxJ = locA[abs(j)].head;
+    Adjacency *adjJ = &adjA[idxJ];
+
+    idxJplus1 = locA[abs(j)+1].tail;
+    Adjacency *adjJplus1 = &adjA[idxJplus1];
+
+    idxM = locA[abs(m)].head;
+    Adjacency *adjM = &adjA[idxM];
+
+    idxMplus1 = locA[abs(m)+1].tail;
+    Adjacency *adjMplus1 = &adjA[idxMplus1];
+
+
+        // trazer j+1 para j
+        if(abs(adjA[idxJ].first) == j)
+        {
+            if(abs(adjA[idxJplus1].first) == abs(j)+1)
             {
-                temp = adjA[idxb].second;
-                adjA[idxb].second = adjA[idxd].first;
+                temp = adjA[idxJ].second;
+                adjA[idxJ].second = adjA[idxJplus1].first;
 
                 // Altero a Tabela LocA:
-                if(adjA[idxd].first > 0)
-                    locA[adjA[idxd].first].tail = idxd;
+                if(adjA[idxJplus1].first > 0)
+                    locA[adjA[idxJplus1].first].tail = idxJ;
                 else
-                    locA[-adjA[idxd].first].head = idxd;
+                    locA[-adjA[idxJplus1].first].head = idxJ;
 
-                adjA[idxd].first = temp;
+                adjA[idxJplus1].first = temp;
 
                 // Altero a Tabela LocA:
                 if(temp > 0)
-                    locA[temp].tail = idxb;
+                    locA[temp].tail = idxJplus1;
                 else
-                    locA[-temp].head = idxb;
+                    locA[-temp].head = idxJplus1;
             }
             else
             {
-                temp = adjA[idxb].second;
-                adjA[idxb].second = adjA[idxd].second;
+                temp = adjA[idxJ].second;
+                adjA[idxJ].second = adjA[idxJplus1].second;
 
                 // Altero a Tabela LocA:
-                if(adjA[idxd].second > 0)
-                    locA[adjA[idxd].second].tail = idxb;
+                if(adjA[idxJplus1].second > 0)
+                    locA[adjA[idxJplus1].second].tail = idxJ;
                 else
-                    locA[-adjA[idxd].second].head = idxb;
+                    locA[-adjA[idxJplus1].second].head = idxJ;
 
-                adjA[idxd].second = temp;
+                adjA[idxJplus1].second = temp;
 
                 // Altero a Tabela LocA:
                 if(temp > 0)
-                    locA[temp].tail = idxd;
+                    locA[temp].tail = idxJplus1;
                 else
-                    locA[-temp].head = idxd;
+                    locA[-temp].head = idxJplus1;
             }
         }
         else
         {
-            if(adjA[idxd].first == abs(m)+1)
+            if(abs(adjA[idxJplus1].first) == abs(j)+1)
             {
-                temp = adjA[idxb].first;
-                adjA[idxb].first = adjA[idxd].first;
+                temp = adjA[idxJ].first;
+                adjA[idxJ].first = adjA[idxJplus1].first;
 
                 // Altero a Tabela LocA:
-                if(adjA[idxd].first > 0)
-                    locA[adjA[idxd].first].tail = idxb;
+                if(adjA[idxJplus1].first > 0)
+                    locA[adjA[idxJplus1].first].tail = idxJ;
                 else
-                    locA[-adjA[idxd].first].head = idxb;
+                    locA[-adjA[idxJplus1].first].head = idxJ;
 
-                adjA[idxd].first = temp;
+                adjA[idxJplus1].first = temp;
 
                 // Altero a Tabela LocA:
                 if(temp > 0)
-                    locA[temp].tail = idxd;
+                    locA[temp].tail = idxJplus1;
                 else
-                    locA[-temp].head = idxd;
+                    locA[-temp].head = idxJplus1;
             }
             else
             {
-                temp = adjA[idxb].first;
-                adjA[idxb].first = adjA[idxd].second;
+                temp = adjA[idxJ].first;
+                adjA[idxJ].first = adjA[idxJplus1].second;
 
                 // Altero a Tabela LocA:
-                if(adjA[idxd].second > 0)
-                    locA[adjA[idxd].second].tail = idxb;
+                if(adjA[idxJplus1].second > 0)
+                    locA[adjA[idxJplus1].second].tail = idxJ;
                 else
-                    locA[-adjA[idxd].second].head = idxb;
+                    locA[-adjA[idxJplus1].second].head = idxJ;
 
-                adjA[idxd].second = temp;
+                adjA[idxJplus1].second = temp;
 
                 // Altero a Tabela LocA:
                 if(temp > 0)
-                    locA[temp].tail = idxd;
+                    locA[temp].tail = idxJ;
                 else
-                    locA[-temp].head = idxd;
+                    locA[-temp].head = idxJ;
             }
         }
-    }
+
+        // trazer m+1 para m
+        if(abs(adjA[idxM].first) == abs(m))
+        {
+            if(abs(adjA[idxMplus1].first) == abs(m)+1)
+            {
+                temp = adjA[idxM].second;
+                adjA[idxM].second = adjA[idxMplus1].first;
+
+                // Altero a Tabela LocA:
+                if(adjA[idxMplus1].second > 0)
+                    locA[adjA[idxMplus1].second].tail = idxM;
+                else
+                    locA[-adjA[idxMplus1].second].head = idxM;
+
+                adjA[idxMplus1].first = temp;
+
+                // Altero a Tabela LocA:
+                if(temp > 0)
+                    locA[temp].tail = idxMplus1;
+                else
+                    locA[-temp].head = idxMplus1;
+
+            }
+            else
+            {
+                temp = adjA[idxM].second;
+                adjA[idxM].second = adjA[idxMplus1].second;
+
+                // Altero a Tabela LocA:
+                if(adjA[idxMplus1].second > 0)
+                    locA[adjA[idxMplus1].second].tail = idxM;
+                else
+                    locA[-adjA[idxMplus1].second].head = idxM;
+
+                adjA[idxMplus1].second = temp;
+
+                // Altero a Tabela LocA:
+                if(temp > 0)
+                    locA[temp].tail = idxMplus1;
+                else
+                    locA[-temp].head = idxMplus1;
+            }
+        }
+        else
+        {
+            if(abs(adjA[idxMplus1].first) == abs(m)+1)
+            {
+                temp = adjA[idxM].first;
+                adjA[idxM].first = adjA[idxMplus1].first;
+
+
+                // Altero a Tabela LocA:
+                if(adjA[idxMplus1].first > 0)
+                    locA[adjA[idxMplus1].first].tail = idxM;
+                else
+                    locA[-adjA[idxMplus1].first].head = idxM;
+
+                adjA[idxMplus1].first = temp;
+
+                // Altero a Tabela LocA:
+                if(temp > 0)
+                     locA[temp].tail = idxMplus1;
+                else
+                    locA[-temp].head = idxMplus1;
+            }
+            else
+            {
+                temp = adjA[idxM].first;
+                adjA[idxM].first = adjA[idxMplus1].second;
+
+                // Altero a Tabela LocA:
+                if(adjA[idxMplus1].second > 0)
+                    locA[adjA[idxMplus1].second].tail = idxM;
+                else
+                    locA[-adjA[idxMplus1].second].head = idxM;
+
+                adjA[idxMplus1].second = temp;
+
+                // Altero a Tabela LocA:
+                if(temp > 0)
+                    locA[temp].tail = idxMplus1;
+                else
+                    locA[-temp].head = idxMplus1;
+            }
+        }
 }
 
 /**
@@ -1162,12 +1337,14 @@ void AdjacencyGraph::paths()
     for(int i=1; adjA[i].first != END_OF_TABLE; ++i)
     {
         if( adjA[i].isTelomere() && !adjA[i].visited )
-        {
+        {   
             int idxLast;
             int length = getLengthFromA(i, &idxLast);
 
             Path path = { adjA[i].first, idxLast };
-
+            
+            //adjA[idxLast].visited = true;
+            
             if( length%2 == 0 )
                 evenPathsFromA.push(path);
             else {
@@ -1179,6 +1356,7 @@ void AdjacencyGraph::paths()
         }
     }
 
+
     // Para cada telomero do Genoma B
     for(int i=1; adjB[i].first != END_OF_TABLE; ++i)
     {
@@ -1186,7 +1364,9 @@ void AdjacencyGraph::paths()
         {
             int idxLast;
             int length = getLengthFromB(i, &idxLast);
+
             Path path = { adjB[i].first, idxLast};
+            //adjB[idxLast].visited = true;
 
             if( length%2 == 0 )
                 evenPathsFromB.push(path);
@@ -1264,7 +1444,11 @@ int AdjacencyGraph::getLengthFromA(int i, int *idxLast)
         length++;
     } while (adjA[i].second != 0 && !adjA[i].visited);
 
-    if (idxLast != NULL && length % 2 == 0) *idxLast = i;
+    if (idxLast != NULL && length % 2 == 0)
+    {
+        adjA[i].visited = true;
+        *idxLast = i;
+    }
 
     return length;
 }
@@ -1324,6 +1508,7 @@ int AdjacencyGraph::getLengthFromB(int i, int *idxLast)
         adjB[i].visited = true;
         *idxLast = i;
     }
+
     return length;
 }
 
@@ -1424,139 +1609,135 @@ void AdjacencyGraph::capping()
 
     // Capping para caminhos pares:
 
-    while(!evenPathsFromA.empty() || !evenPathsFromB.empty())
+    while(!evenPathsFromA.empty())
     {
-        if(!evenPathsFromA.empty())
-        {
-            p = evenPathsFromA.front().start;
+        p = evenPathsFromA.front().start;
 
-            // Adicionar:
-            // (n+1)h no inicio do caminho
-            // (n+1)t no final da tabela adjA
+        // Adicionar:
+        // (n+1)h no inicio do caminho
+        // (n+1)t no final da tabela adjA
 
-            if(p > 0)
-                idxp1 = locA[p].tail;
-            else
-                idxp1 = locA[-p].head;
+        if(p > 0)
+            idxp1 = locA[p].tail;
+        else
+            idxp1 = locA[-p].head;
 
-            adjA[idxp1].second = n+1;
-            locA[n+1].tail = idxp1;
-            adjA[idxEndOfAdjA].first = -(n+1);
-            locA[n+1].head = idxEndOfAdjA;
-            adjA[idxEndOfAdjA].second = 0;
+        adjA[idxp1].second = n+1;
+        locA[n+1].tail = idxp1;
+        adjA[idxEndOfAdjA].first = -(n+1);
+        locA[n+1].head = idxEndOfAdjA;
+        adjA[idxEndOfAdjA].second = 0;
 
-            idxEndOfAdjA++;
+        idxEndOfAdjA++;
 
-            // Adicionar:
-            // (n+2)h no final do caminho
-            // (n+2)t no final da tabela adjA
+        // Adicionar:
+        // (n+2)h no final do caminho
+        // (n+2)t no final da tabela adjA
 
-            idxp2 = evenPathsFromA.front().idxLast;
+        idxp2 = evenPathsFromA.front().idxLast;
 
-            adjA[idxp2].second = n+2;
-            locA[n+2].tail = idxp2;
-            adjA[idxEndOfAdjA].first = -(n+2);
-            locA[n+2].head = idxEndOfAdjA;
-            adjA[idxEndOfAdjA].second = 0;
+        adjA[idxp2].second = n+2;
+        locA[n+2].tail = idxp2;
+        adjA[idxEndOfAdjA].first = -(n+2);
+        locA[n+2].head = idxEndOfAdjA;
+        adjA[idxEndOfAdjA].second = 0;
 
-            idxEndOfAdjA++;
+        idxEndOfAdjA++;
 
-            // Nova adjacência em adjB:
-            adjB[idxEndOfAdjB].first = n+1;
-            locB[n+1].tail = idxEndOfAdjB;
-            adjB[idxEndOfAdjB].second = n+2;
-            locB[n+2].tail = idxEndOfAdjB;
+        // Nova adjacência em adjB:
+        adjB[idxEndOfAdjB].first = n+1;
+        locB[n+1].tail = idxEndOfAdjB;
+        adjB[idxEndOfAdjB].second = n+2;
+        locB[n+2].tail = idxEndOfAdjB;
 
-            idxEndOfAdjB++;
+        idxEndOfAdjB++;
 
-            // Adicionar:
-            // (n+1)t no final da tabela adjB
-            // (n+2)t no final da tabela adjB
+        // Adicionar:
+        // (n+1)t no final da tabela adjB
+        // (n+2)t no final da tabela adjB
 
-            adjB[idxEndOfAdjB].first = -(n+1);
-            locB[n+1].head = idxEndOfAdjB;
-            adjB[idxEndOfAdjB].second = 0;
+        adjB[idxEndOfAdjB].first = -(n+1);
+        locB[n+1].head = idxEndOfAdjB;
+        adjB[idxEndOfAdjB].second = 0;
 
-            idxEndOfAdjB++;
+        idxEndOfAdjB++;
 
-            adjB[idxEndOfAdjB].first = -(n+2);
-            locB[n+2].head = idxEndOfAdjB;
-            adjB[idxEndOfAdjB].first = 0;
+        adjB[idxEndOfAdjB].first = -(n+2);
+        locB[n+2].head = idxEndOfAdjB;
+        adjB[idxEndOfAdjB].second = 0;
 
-            idxEndOfAdjB++;
+        idxEndOfAdjB++;
 
-            evenPathsFromA.pop();
+        evenPathsFromA.pop();
 
-            cycles.push(p);
-            n = n+2;
-        } // end if(!evenPathsFromA.empty())
+        cycles.push(p);
+        n = n+2;
+    } // end while(!evenPathsFromA.empty())
 
-        if(!evenPathsFromB.empty())
-        {
-            p = evenPathsFromB.front().start;
+    while(!evenPathsFromB.empty())
+    {
+        p = evenPathsFromB.front().start;
 
-            // Adicionar:
-            // (n+1)h no inicio do caminho
-            // (n+1)t no final da tabela adjB
+        // Adicionar:
+        // (n+1)h no inicio do caminho
+        // (n+1)t no final da tabela adjB
 
-            if(p > 0)
-                idxp1 = locB[p].tail;
-            else
-                idxp1 = locB[-p].head;
+        if(p > 0)
+            idxp1 = locB[p].tail;
+        else
+            idxp1 = locB[-p].head;
 
-            adjB[idxp1].second = n+1;
-            locB[n+1].tail = idxp1;
-            adjB[idxEndOfAdjB].first = -(n+1);
-            locB[n+1].head = idxEndOfAdjB;
-            adjB[idxEndOfAdjB].second = 0;
+        adjB[idxp1].second = n+1;
+        locB[n+1].tail = idxp1;
+        adjB[idxEndOfAdjB].first = -(n+1);
+        locB[n+1].head = idxEndOfAdjB;
+        adjB[idxEndOfAdjB].second = 0;
 
-            idxEndOfAdjB++;
+        idxEndOfAdjB++;
 
-            // Adicionar:
-            // (n+2)h no final do caminho
-            // (n+2)t no final da tabela adjB
+        // Adicionar:
+        // (n+2)h no final do caminho
+        // (n+2)t no final da tabela adjB
 
-            idxp2 = evenPathsFromB.front().idxLast;
+        idxp2 = evenPathsFromB.front().idxLast;
 
-            adjB[idxp2].second = n+2;
-            locB[n+2].tail = idxp2;
-            adjB[idxEndOfAdjB].first = -(n+2);
-            locB[n+2].head = idxEndOfAdjB;
-            adjB[idxEndOfAdjB].second = 0;
+        adjB[idxp2].second = n+2;
+        locB[n+2].tail = idxp2;
+        adjB[idxEndOfAdjB].first = -(n+2);
+        locB[n+2].head = idxEndOfAdjB;
+        adjB[idxEndOfAdjB].second = 0;
 
-            idxEndOfAdjB++;
+        idxEndOfAdjB++;
 
-            // Nova adjacência:
-            adjA[idxEndOfAdjA].first = n+1;
-            locA[n+1].tail = idxEndOfAdjA;
-            adjA[idxEndOfAdjA].second = n+2;
-            locA[n+2].tail = idxEndOfAdjA;
+        // Nova adjacência:
+        adjA[idxEndOfAdjA].first = n+1;
+        locA[n+1].tail = idxEndOfAdjA;
+        adjA[idxEndOfAdjA].second = n+2;
+        locA[n+2].tail = idxEndOfAdjA;
 
-            idxEndOfAdjA++;
+        idxEndOfAdjA++;
 
-            // Adicionar:
-            // (n+1)t no final da tabela adjA
-            // (n+2)t no final da tabela adjA
+        // Adicionar:
+        // (n+1)t no final da tabela adjA
+        // (n+2)t no final da tabela adjA
 
+        adjA[idxEndOfAdjA].first = -(n+1);
+        locA[n+1].head = idxEndOfAdjA;
+        adjA[idxEndOfAdjA].second = 0;
 
-            adjA[idxEndOfAdjA].first = -(n+1);
-            locA[n+1].head = idxEndOfAdjA;
-            adjA[idxEndOfAdjA].second = 0;
+        idxEndOfAdjA++;
 
-            idxEndOfAdjA++;
+        adjA[idxEndOfAdjA].first = -(n+2);
+        locA[n+2].head = idxEndOfAdjA;
+        adjA[idxEndOfAdjA].second = 0;
 
-            adjA[idxEndOfAdjA].first = -(n+2);
-            locA[n+2].head = idxEndOfAdjA;
-            adjA[idxEndOfAdjA].second = 0;
+        idxEndOfAdjA++;
 
-            idxEndOfAdjA++;
+        evenPathsFromB.pop();
 
-            evenPathsFromB.pop();
-
-            cycles.push(p);
-            n = n+2;
-        } // end if(!evenPathsFromB.empty())
-    }
+        cycles.push(p);
+        n = n+2;
+    } // end while(!evenPathsFromB.empty())
 }
 
 /**

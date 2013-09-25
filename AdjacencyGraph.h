@@ -113,8 +113,9 @@ class AdjacencyGraph
 
     void translocation(int m);
 
-    void blockInterchange(int j, int m);
+    void blockInterchangePositiveM(int j, int m);
 
+    void blockInterchangeNegativeM(int j, int m);
 
     /**
      * Retorna o maior valor entre duas posições na tabela de adjacencias
