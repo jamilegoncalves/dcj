@@ -13,31 +13,6 @@ int Chromosome::operator[](unsigned int i)
     return genes[i];
 }
 
-/**
-* Determinar número de adjacencias no cromossomo
-*/
-
-int Chromosome::numAdjacencies(Chromosome *chr)
-{
-    int numAdj;
-    int numTel;
-
-    int n = length();
-
-    if(chr->isLinear() == true)
-    {
-        numAdj = n-1;
-        numTel = 2;
-    }
-    else
-    {
-        numAdj = n;
-        numTel = 0;
-    }
-    int offset = numAdj + numTel;
-    return offset;
-}
-
 bool Chromosome::isLinear()
 {
     return linear;
@@ -62,3 +37,27 @@ std::ostream & operator<<( std::ostream &os, const Chromosome& c)
     return os;
 }
 
+/**
+* Determinar número de adjacencias no cromossomo
+*/
+
+int Chromosome::numAdjacencies(Chromosome *chr, int numLabels)
+{
+    int numAdj;
+    int numTel;
+
+    int n = length();
+
+    if(chr->isLinear() == true)
+    {
+        numAdj = n-numLabels-1;
+        numTel = 2;
+    }
+    else
+    {
+        numAdj = n-numLabels;
+        numTel = 0;
+    }
+    int offset = numAdj + numTel;
+    return offset;
+}

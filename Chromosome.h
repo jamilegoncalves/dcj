@@ -12,7 +12,7 @@ public:
 	std::vector<int> genes;
 	std::string name;
 	bool isLinear();
-        int numAdjacencies(Chromosome *chr);
+        int numAdjacencies(Chromosome *chr, int numLabels);
 
         /**
          * Prints the representation of this Genome to a
