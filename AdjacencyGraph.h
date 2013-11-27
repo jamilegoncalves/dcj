@@ -60,7 +60,7 @@ typedef struct
 
 typedef struct
 {
-    unsigned int label;
+    unsigned int positionLabel;
 } LocationLabel;
 
 class AdjacencyGraph
@@ -85,6 +85,8 @@ class AdjacencyGraph
             Location *&loc, LocationLabel *&locLabel);
 
     void findLabels(Genome *a, Genome *b);
+
+    int totalAdjacencies(Genome *g, std::set<int> *labels);
 
     Genome *a;
     Genome *b;

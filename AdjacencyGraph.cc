@@ -59,9 +59,12 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
     int adjacencyTableSize = 3*n + 2;
 
     adj = new Adjacency[adjacencyTableSize];
-    loc = new Location[2*n+1];
-    locLabel = new LocationLabel[2*n+1];
+    loc = new Location[adjacencyTableSize];
+    locLabel = new LocationLabel[adjacencyTableSize];
     int offset = 0;
+    int numAdj = totalAdjacencies(g, labels);
+
+    memset(locLabel, 0, adjacencyTableSize*sizeof(LocationLabel));
 
     std::vector<Chromosome*>::iterator cIterator;
 
@@ -191,24 +194,50 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
                 }
             }
         } // end else is circular
+
+        for (int i = numAdj+1; i < adjacencyTableSize; ++i)
+            adj[i].first = END_OF_TABLE;
+
+        // Constroi tabela de localização
+        for(int i = 1; adj[i].first != END_OF_TABLE; ++i)
+        {
+            if(adj[i].first > 0)
+                loc[adj[i].first].tail = i;
+            else
+                loc[-adj[i].first].head = i;
+
+            if(adj[i].second > 0)
+                loc[adj[i].second].tail = i;
+            else if(adj[i].second < 0)
+                loc[-adj[i].second].head = i;
+
+            if(!adj[i].label.empty())
+            {
+                for(std::vector<int>::iterator it = adj[i].label.begin();
+                        it != adj[i].label.end(); it++)
+                {
+                    locLabel[abs(*it)].positionLabel = i;
+                }
+            }
+        }
         ++k;
         offset = offset + chr->numAdjacencies(chr,l);
     } // end for each cromosome
 
     // Print
     std::cout<< "First: ";
-    for(int i = 1; i <= 8; ++i)
+    for(int i = 1; i <= 7; ++i)
         std::cout<< adj[i].first << ",";
     std::cout<< "\n";
 
 
     std::cout<< "Second: ";
-    for(int i = 1; i <= 8; ++i)
+    for(int i = 1; i <= 7; ++i)
         std::cout<< adj[i].second << ",";
     std::cout<< "\n";
 
     std::cout<< "Labels: ";
-    for(int i = 1; i <= 8; ++i)
+    for(int i = 1; i <= 7; ++i)
     {
         for (std::vector<int>::iterator it = adj[i].label.begin(); it != adj[i].label.end(); it++)
         {
@@ -218,36 +247,27 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
     }
     std::cout<< "\n";
 
-/*
-        // Constroi tabela de locação
-        for(int i = 1; i <= chr->length()+1; ++i)
-        {
-            int label = adj[offset + i].first;
+    std::cout<< "Head: ";
+    for(int i = 1; i <= 5; ++i)
+        std::cout<< loc[i].head << ",";
 
-            if(label > 0)
-                loc[label].tail = offset + i;
-            else if(label < 0)
-                loc[-label].head = offset + i;
+    std::cout<< "\n";
 
-            label = adj[offset + i].second;
+    std::cout<< "tail: ";
+    for(int i = 1; i <= 5; ++i)
+        std::cout<< loc[i].tail << ",";
+    std::cout<< "\n";
 
-            if(label == 0)
-                continue;
-            else if(label > 0)
-                loc[label].tail = offset + i;
-            else if(label < 0)
-                loc[-label].head = offset + i;
-        }
-        offset = offset + chr->numAdjacencies(chr);
-    } // end for
-
-    int numAdj = totalAdjacencies(g);
-
-    for (int i = numAdj+1; i < adjacencyTableSize; ++i)
-        adj[i].first = END_OF_TABLE;
-
-    return numAdj;
-*/
+    std::cout<< "LocLabels: ";
+    
+    for (int i=19; i <= 27; ++i)
+    {
+        if(locLabel[i].positionLabel != 0)
+            std::cout << locLabel[i].positionLabel << ",";
+    }
+    
+    std::cout<< "\n";
+    std::cout<< "\n";
 
 }
 
@@ -333,11 +353,10 @@ void AdjacencyGraph::findLabels(Genome *a, Genome *b)
     }
 }
 
-
-/*
-int AdjacencyGraph::totalAdjacencies(Genome *g)
+int AdjacencyGraph::totalAdjacencies(Genome *g, std::set<int> *labels)
 {
     int totalAdj = 0;
+    int k = 0;
 
     std::vector<Chromosome*>::iterator cIterator;
 
@@ -347,15 +366,22 @@ int AdjacencyGraph::totalAdjacencies(Genome *g)
         Chromosome *chr = *cIterator;
 
         int n = chr->length();
+        int l = labels[k].size();
 
         if(chr->isLinear() == true)
-            totalAdj = totalAdj + n+1;
+            totalAdj = totalAdj + n+1 - l;
         else
-            totalAdj = totalAdj + n;
+            totalAdj = totalAdj + n - l;
+        
+        if(n == l)
+            totalAdj = totalAdj + 1;
+
+        k++;
     }
     return totalAdj;
 }
 
+/*
 bool Adjacency::equals(Adjacency &a)
 {
     return((first == a.first)&&(second==a.second)

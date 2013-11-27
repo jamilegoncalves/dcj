@@ -44,11 +44,11 @@ FFLAGS=
 LDLIBSOPTIONS=
 
 # Build Targets
-.build-conf: ${BUILD_SUBPROJECTS} dist/Debug/GNU-Linux-x86/doublecutandjoin
+.build-conf: ${BUILD_SUBPROJECTS} dist/Debug/GNU-Linux-x86/dcj-subst
 
-dist/Debug/GNU-Linux-x86/doublecutandjoin: ${OBJECTFILES}
+dist/Debug/GNU-Linux-x86/dcj-subst: ${OBJECTFILES}
 	${MKDIR} -p dist/Debug/GNU-Linux-x86
-	${LINK.cc} -o dist/Debug/GNU-Linux-x86/doublecutandjoin ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	${LINK.cc} -o dist/Debug/GNU-Linux-x86/dcj-subst ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
 ${OBJECTDIR}/Chromosome.o: Chromosome.cc 
 	${MKDIR} -p ${OBJECTDIR}
@@ -72,7 +72,7 @@ ${OBJECTDIR}/AdjacencyGraph.o: AdjacencyGraph.cc
 # Clean Targets
 .clean-conf:
 	${RM} -r build/Debug
-	${RM} dist/Debug/GNU-Linux-x86/doublecutandjoin
+	${RM} dist/Debug/GNU-Linux-x86/dcj-subst
 
 # Subprojects
 .clean-subprojects:
