@@ -21,6 +21,7 @@
 #include "Genome.h"
 #include <iostream>
 #include <limits.h>
+#include <utility>
 #include <queue>
 #include <map>
 #include <vector>
@@ -34,23 +35,22 @@ public:
     int first;
     int second;
     std::vector <int> label;
+    bool visited;
 
-    //bool setCircularSingleton();
-    //bool isCircularSingleton();
-    //bool isLinearSingleton();
     bool isAdjacency();
     bool isTelomere();
 
+    /* returns this \ {x}  */
+    int setMinus(int x);
 private:
     bool circularSingleton;
 
 /*
     bool equals(Adjacency& other);
-    
-    int setMinus(int x);
-*/
-
+    */
 };
+
+typedef enum{undef, genomeA, genomeB} WhichGenome;
 
 typedef struct
 {
@@ -63,6 +63,13 @@ typedef struct
     unsigned int positionLabel;
 } LocationLabel;
 
+typedef struct
+{
+    WhichGenome startsIn;
+    int start;
+    int idxLast;
+} Path;
+
 class AdjacencyGraph
 {
     public:
@@ -71,11 +78,15 @@ class AdjacencyGraph
 
     private:
 
-
     Adjacency *adjA, *adjB;
     Location *locA, *locB;
     LocationLabel *locLabelA, *locLabelB;
     int idxEndOfAdjA, idxEndOfAdjB;
+    int numLabels;
+
+    
+    std::deque< std::pair<WhichGenome,int> > cycles;
+    std::deque<Path> oddPaths,evenPathsFromA, evenPathsFromB, adjacencies;
 
     /**
      * Constroi tabelas: Adjacency e Location.
@@ -84,9 +95,28 @@ class AdjacencyGraph
     int constructTables(Genome *g,  std::set<int> *labels, Adjacency *&adj,
             Location *&loc, LocationLabel *&locLabel);
 
+    /**
+     * Armazena:
+     * Primeiro elemento de cada caminho ímpar na fila: oddpaths
+     * Primeiro elemento de cada caminho par na fila: evenpaths
+     */
+    void paths();
+
+    int getLengthFromA(int i, int *idxLast = NULL);
+
+    int getLengthFromB(int i, int *idxLast = NULL);
+
+    int substPotentialInPaths(std::deque<Path> paths);
+
+    int substPotentialInCycles(std::deque< std::pair<WhichGenome,int> > cycle);
+
+    int substPotential();
+
     void findLabels(Genome *a, Genome *b);
 
     int totalAdjacencies(Genome *g, std::set<int> *labels);
+
+    int DCJsubstDistance(Genome *a);
 
     Genome *a;
     Genome *b;
@@ -94,9 +124,9 @@ class AdjacencyGraph
     std::set<int> *labelsInA, *labelsInB;
     // Armazena a posição do Singleton Circular
     std::vector <int> circularSingleton;
+    std::vector <int> linearSingleton;
 
     int n;
-
 };
 
 #endif

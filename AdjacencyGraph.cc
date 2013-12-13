@@ -19,6 +19,7 @@
 #include "AdjacencyGraph.h"
 #include <stack>
 #include <map>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -38,6 +39,8 @@ AdjacencyGraph::AdjacencyGraph(Genome *a, Genome *b)
     idxEndOfAdjA = constructTables(a, labelsInA, adjA, locA, locLabelA)+1;
     idxEndOfAdjB = constructTables(b, labelsInB, adjB, locB, locLabelB)+1;
 
+    std::cout<< "Distância: "<< DCJsubstDistance(a);
+    std::cout<< "\n ";
 }
 
 AdjacencyGraph::~AdjacencyGraph()
@@ -117,6 +120,7 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
             {
                 adj[offset + 1].first = 0;
                 adj[offset + 1].second = 0;
+                linearSingleton.push_back(offset+1);
             }
         } // End if is Linear
         else // if it's a circular chromosome
@@ -282,6 +286,443 @@ bool Adjacency::isAdjacency()
         return false;
 }
 
+/**
+ * Armazena:
+ * Primeiro elemento de cada caminho ímpar na fila: oddpaths
+ * Primeiro elemento de cada caminho par na fila: evenpaths
+ */
+void AdjacencyGraph::paths()
+{
+    for(int i=1; adjA[i].first != END_OF_TABLE; ++i)
+        adjA[i].visited = false;
+
+    for(int i=1; adjB[i].first != END_OF_TABLE; ++i)
+        adjB[i].visited = false;
+
+    // Para cada telomero do Genoma A
+    for(int i=1; adjA[i].first != END_OF_TABLE; ++i)
+    {
+        if( adjA[i].isTelomere() && !adjA[i].visited )
+        {
+            int idxLast;
+            int length = getLengthFromA(i, &idxLast);
+
+            Path path = { genomeA, adjA[i].first, idxLast };
+
+            //adjA[idxLast].visited = true;
+
+            if( length%2 == 0 )
+                evenPathsFromA.push_back(path);
+            else {
+                if(length == 1)
+                    adjacencies.push_back(path);
+                else
+                    oddPaths.push_back(path);
+            }
+        }
+    }
+
+
+    // Para cada telomero do Genoma B
+    for(int i=1; adjB[i].first != END_OF_TABLE; ++i)
+    {
+        if( adjB[i].isTelomere() && !adjB[i].visited )
+        {
+            int idxLast;
+            int length = getLengthFromB(i, &idxLast);
+
+            Path path = { genomeB, adjB[i].first, idxLast};
+            //adjB[idxLast].visited = true;
+
+            if( length%2 == 0 )
+                evenPathsFromB.push_back(path);
+            else
+            {
+                std::cerr << "Error: invalid adjacency table!" << std::endl;
+                throw "Error: invalid adjacency table!";
+            }
+
+        }
+    }
+
+    // Se não é telomero
+    for(int i=1; adjB[i].first != END_OF_TABLE; ++i)
+    {
+        if( !adjB[i].isTelomere() && !adjB[i].visited )
+        {
+            int length = getLengthFromB(i);
+            std::pair<WhichGenome,int> p(genomeB, adjB[i].first);
+            cycles.push_back(p);
+        }
+    }
+
+}
+
+
+#define swapCond(a,b) if (a != 0 && b != 0) { temp = a; a = b; b = temp; }
+
+int AdjacencyGraph::getLengthFromA(int i, int *idxLast)
+{
+    int length = 0;
+    int j, k;
+    int temp;
+
+    if (idxLast != NULL) *idxLast = 0;
+
+    do
+    {
+        adjA[i].visited = true;
+
+        if(adjA[i].first > 0)
+            j = locB[adjA[i].first].tail;
+        else
+            j = locB[-adjA[i].first].head;
+
+        adjB[j].visited = true;
+
+        length++;
+
+        if(adjB[j].second == 0)
+        {
+            if (idxLast != NULL) *idxLast = j;
+            break;
+        }
+
+        if(adjA[i].first == adjB[j].first)
+        {
+            if(adjB[j].second > 0)
+                i = locA[adjB[j].second].tail;
+            else
+                i = locA[-adjB[j].second].head;
+
+            if(adjB[j].second == adjA[i].first)
+                swapCond(adjA[i].first, adjA[i].second);
+        }
+        else
+        {
+            if(adjB[j].first > 0)
+                i = locA[adjB[j].first].tail;
+            else
+                i = locA[-adjB[j].first].head;
+
+            if(adjB[j].first == adjA[i].first)
+                swapCond(adjA[i].first, adjA[i].second);
+        }
+
+        length++;
+    } while (adjA[i].second != 0 && !adjA[i].visited);
+
+    if (idxLast != NULL && length % 2 == 0)
+    {
+        adjA[i].visited = true;
+        *idxLast = i;
+    }
+
+    return length;
+}
+
+int AdjacencyGraph::getLengthFromB(int i, int *idxLast)
+{
+    int length = 0;
+    int j, k;
+    int temp;
+
+    if (idxLast != NULL) *idxLast = 0;
+
+    do
+    {
+        adjB[i].visited = true;
+
+        if(adjB[i].first > 0)
+            j = locA[adjB[i].first].tail;
+        else
+            j = locA[-adjB[i].first].head;
+
+        adjA[j].visited = true;
+
+        length++;
+
+        if(adjA[j].second == 0)
+        {
+            if (idxLast != NULL) *idxLast = j;
+            break;
+        }
+
+        if(adjB[i].first == adjA[j].first)
+        {
+            if(adjA[j].second > 0)
+                i = locB[adjA[j].second].tail;
+            else
+                i = locB[-adjA[j].second].head;
+
+            if(adjA[j].second == adjB[i].first)
+                swapCond(adjB[i].first, adjB[i].second);
+        }
+        else
+        {
+            if(adjA[j].first > 0)
+                i = locB[adjA[j].first].tail;
+            else
+                i = locB[-adjA[j].first].head;
+
+            if(adjA[j].first == adjB[i].first)
+                swapCond(adjB[i].first, adjB[i].second);
+        }
+
+        length++;
+    } while (adjB[i].second != 0 && !adjB[i].visited);
+
+    if (idxLast != NULL && length % 2 == 0) {
+        adjB[i].visited = true;
+        *idxLast = i;
+    }
+
+    return length;
+}
+
+int AdjacencyGraph::DCJsubstDistance(Genome *a)
+{
+    paths();
+
+    int g = a->numGenes() - numLabels;
+    int pL = linearSingleton.size();
+    int pC = circularSingleton.size();
+    int b = oddPaths.size() + adjacencies.size();
+    int c = cycles.size();
+    int sigma = substPotential();
+
+    int d = g - c - (b/2) + sigma - pL - pC;
+
+    return d;
+}
+
+/*
+ * Determinar o número total de runs
+ */
+
+int AdjacencyGraph::substPotential()
+{
+    int c = substPotentialInCycles(cycles);
+    int odd = substPotentialInPaths(oddPaths);
+    int evenFromA = substPotentialInPaths(evenPathsFromA);
+    int evenFromB = substPotentialInPaths(evenPathsFromB);
+
+    int substPotential = c + odd + evenFromA + evenFromB;
+
+    return substPotential;
+}
+
+/*
+ * Determinar o número de runs nos ciclos
+ */
+
+int AdjacencyGraph::substPotentialInCycles(std::deque< std::pair<WhichGenome,int> > cycle)
+{
+    WhichGenome lastLabelIn = undef;
+    WhichGenome whereThis = undef;
+
+    int aRuns, bRuns, numRuns;
+    int i, idx, temp;
+    int first; // Condição de parada do ciclo
+
+    Adjacency *adjTable;
+    Location *locTable;
+
+    int substPTotal = 0; // Somatório de potenciais de substituição
+    int substP; // potencial de substituição da componente c
+
+    std::deque< std::pair<WhichGenome,int> >::iterator it;
+
+    for(it = cycle.begin(); it != cycle.end(); it++)
+    {
+        aRuns = 0;
+        bRuns = 0;
+        numRuns = 0;
+        std::pair<WhichGenome,int> p = *it;
+
+        i = p.second;
+
+        if(p.first == genomeA)
+        {
+            whereThis = genomeA;
+            adjTable = adjA;
+            locTable = locA;
+        }
+        else if(p.first == genomeB)
+        {
+            whereThis = genomeB;
+            adjTable = adjB;
+            locTable = locB;
+        }
+
+        if(i > 0)
+            idx = locTable[i].tail;
+        else if(i < 0)
+            idx = locTable[-i].head;
+
+        first = adjTable[idx].setMinus(i);
+
+        for(;;)
+        {
+            // A adjacencia possui label?
+            if(!adjTable[idx].label.empty())
+            {
+                if(lastLabelIn != whereThis)
+                {
+                    if(whereThis == genomeA)
+                        ++aRuns;
+                    if(whereThis == genomeB)
+                        ++bRuns;
+                }
+                lastLabelIn = whereThis;
+            }
+
+            // Condição de parada
+            if(i == first)
+                break;
+
+            // Atualizando a adjacencia
+            if(whereThis == genomeA)
+            {
+                whereThis = genomeB;
+                adjTable = adjB;
+                locTable = locB;
+            }
+            else if(whereThis == genomeB)
+            {
+                whereThis = genomeA;
+                adjTable = adjA;
+                locTable = locA;
+            }
+
+            if(i > 0)
+                idx = locTable[i].tail;
+            else if(i < 0)
+                idx = locTable[-i].head;
+
+            temp = i;
+
+            i = adjTable[idx].setMinus(temp);
+        }
+
+        numRuns = aRuns + bRuns;
+
+        if(numRuns >= 1)
+            substP = ceil((numRuns+1.0)/4.0);
+        else
+            substP = 0;
+
+        substPTotal = substPTotal + substP;
+    }
+    return substPTotal;
+}
+
+/*
+ * Determinar o número de runs nos caminhos pares e ímpares
+ */
+
+int AdjacencyGraph::substPotentialInPaths(std::deque<Path> paths)
+{
+    WhichGenome lastLabelIn = undef;
+    WhichGenome whereThis = undef;
+    
+    int aRuns, bRuns, numRuns;
+    int i, idx, temp;
+    int first; // Condição de parada do ciclo
+    
+    Adjacency *adjTable;
+    Location *locTable;
+    
+    int substPTotal = 0; // Somatório de potenciais de substituição
+    int substP; // potencial de substituição da componente c
+
+    std::deque<Path>::iterator it;
+
+    // Determinar o número de runs
+
+    for(it = paths.begin(); it != paths.end(); it++)
+    {
+        aRuns = 0;
+        bRuns = 0;
+        numRuns = 0;
+        Path p = *it;
+
+        i = p.start;
+
+        if(p.startsIn == genomeA)
+        {
+            whereThis = genomeA;
+            adjTable = adjA;
+            locTable = locA;
+        }
+        else if(p.startsIn == genomeB)
+        {
+            whereThis = genomeB;
+            locTable = locB;
+        }
+
+        if(i > 0)
+            idx = locTable[i].tail;
+        else if(i < 0)
+            idx = locTable[-i].head;
+
+        for(;;)
+        {
+            // A adjacencia possui label?
+            if(!adjTable[idx].label.empty())
+            {
+                if(lastLabelIn != whereThis)
+                {
+                    if(whereThis == genomeA)
+                        ++aRuns;
+                    if(whereThis == genomeB)
+                        ++bRuns;
+                }
+                lastLabelIn = whereThis;
+            }
+
+            // Condição de parada
+            if(i == 0)
+                break;
+
+            // Atualizando a adjacencia
+            if(whereThis == genomeA)
+            {
+                whereThis = genomeB;
+                adjTable = adjB;
+                locTable = locB;
+            }
+            else if(whereThis == genomeB)
+            {
+                whereThis = genomeA;
+                adjTable = adjA;
+                locTable = locA;
+            }
+
+            if(i > 0)
+                idx = locTable[i].tail;
+            else if(i < 0)
+                idx = locTable[-i].head;
+
+            temp = i;
+
+            i = adjTable[idx].setMinus(temp);
+        }
+
+        numRuns = aRuns + bRuns;
+
+        if(numRuns >= 1)
+            substP = ceil((numRuns+1.0)/4.0);
+        else
+            substP = 0;
+
+        substPTotal = substPTotal + substP;
+    }
+    return substPTotal;
+}
+
+
+
 bool Adjacency::isTelomere()
 {
     if (first == 0)
@@ -291,6 +732,8 @@ bool Adjacency::isTelomere()
     else
         return false;
 }
+
+
 
 void AdjacencyGraph::findLabels(Genome *a, Genome *b)
 {
@@ -333,7 +776,10 @@ void AdjacencyGraph::findLabels(Genome *a, Genome *b)
         for(int i = 1; i <= chrA->length(); ++i)
         {
             if( markersB.find(abs((*chrA)[i])) == markersB.end() )
+            {
                 labelsInA[k].insert(abs((*chrA)[i]));
+                numLabels++;
+            }
         }
         ++k;
     }
@@ -347,7 +793,9 @@ void AdjacencyGraph::findLabels(Genome *a, Genome *b)
         for(int i = 1; i <= chrB->length(); ++i)
         {
             if( markersA.find(abs((*chrB)[i])) == markersA.end() )
+            {
                 labelsInB[k].insert(abs((*chrB)[i]));
+            }
         }
         ++k;
     }
@@ -387,7 +835,7 @@ bool Adjacency::equals(Adjacency &a)
     return((first == a.first)&&(second==a.second)
                             || (first==a.second)&&(second==a.first));
 }
-
+*/
 int Adjacency::setMinus(int x)
 {
     if(first == x)
@@ -395,5 +843,3 @@ int Adjacency::setMinus(int x)
     else
         return first;
 }
-
-*/
