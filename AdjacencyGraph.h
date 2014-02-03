@@ -52,6 +52,8 @@ private:
 
 typedef enum{undef, genomeA, genomeB} WhichGenome;
 
+typedef unsigned char byte;
+
 typedef struct
 {
     unsigned int head;
@@ -69,6 +71,12 @@ typedef struct
     int start;
     int idxLast;
 } Path;
+
+typedef enum { AAe = 0, AAa1 = 1, AAa3 = 3, AAb1 = 17, AAb3 = 19,
+        AAab2 = 10, AAab4 = 12, BBe = 96, BBa1 = 97, BBa3 = 99,
+        BBb1 = 113, BBb3 = 115, BBab2 = 106, BBab4 = 108,
+        ABe = 32, ABa1 = 33, ABa3 = 35, ABb1 = 49, ABb3 = 51,
+        ABab2 = 42, ABab4 = 44, ABba2 = 50, ABba4 = 52 } PathType;
 
 class AdjacencyGraph
 {
@@ -106,11 +114,29 @@ class AdjacencyGraph
 
     int getLengthFromB(int i, int *idxLast = NULL);
 
-    int substPotentialInPaths(std::deque<Path> paths);
+    int substPotentialInPaths(std::deque<Path> paths,
+                                int parity, int *pathTable, int *count);
 
     int substPotentialInCycles(std::deque< std::pair<WhichGenome,int> > cycle);
 
-    int substPotential();
+    int substPotential(int pathTable[128]);
+
+    int getK(int numRuns);
+
+    int getU(int *pathTable);
+    int getV(int *pathTable);
+    int getW(int *pathTable);
+    int getX(int *pathTable);
+    int getY(int *pathTable);
+    int getZ(int *pathTable);
+
+    byte pathToByte(WhichGenome firstElementIn,
+                WhichGenome lastElementIn,
+                WhichGenome firstRunIn,
+                WhichGenome lastRunIn, int k);
+
+    std::ostream &printPath(byte representation, std::ostream &os);
+    const char *pathToStr(byte representation);
 
     void findLabels(Genome *a, Genome *b);
 

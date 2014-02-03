@@ -23,6 +23,11 @@ Genome::Genome(std::string name)
     this->name = name;
 }
 
+Genome::Genome(std::string name, std::string description)
+{
+    this->name = name;
+}
+
 /**
  * Determinar número de genes no genoma
  */

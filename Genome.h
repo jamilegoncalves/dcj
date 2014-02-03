@@ -27,6 +27,7 @@ class Genome
 {
 public:
 	Genome(std::string name);
+        Genome(std::string name, std::string description);
         int numGenes();
 
         /**

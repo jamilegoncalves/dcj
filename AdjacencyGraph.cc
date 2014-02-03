@@ -24,6 +24,7 @@
 #include <string.h>
 #include <assert.h>
 #include <set>
+#include <bitset>
 
 AdjacencyGraph::AdjacencyGraph(Genome *a, Genome *b)
 {
@@ -489,9 +490,17 @@ int AdjacencyGraph::DCJsubstDistance(Genome *a)
     int pC = circularSingleton.size();
     int b = oddPaths.size() + adjacencies.size();
     int c = cycles.size();
-    int sigma = substPotential();
+    int pathTable[128] = { 0 };
+    int sigma = substPotential(pathTable);
 
-    int d = g - c - (b/2) + sigma - pL - pC;
+    int u = getU(pathTable); // arrumar
+    int v = getV(pathTable);
+    int w = getW(pathTable); // arrumar
+    int x = getX(pathTable); // arrumar
+    int y = getY(pathTable);
+    int z = getZ(pathTable);
+
+    int d = g - c - (b/2) + sigma - pL - pC - 2*u - 3*v - 2*w - x - 2*y - z;
 
     return d;
 }
@@ -500,17 +509,508 @@ int AdjacencyGraph::DCJsubstDistance(Genome *a)
  * Determinar o número total de runs
  */
 
-int AdjacencyGraph::substPotential()
+int AdjacencyGraph::substPotential(int pathTable[128])
 {
+    int oddPath = 1;
+    int evenPath = 2;
+    int numPaths = oddPaths.size()+evenPathsFromA.size()+evenPathsFromB.size();
+    
+    int count = 0;
+
     int c = substPotentialInCycles(cycles);
-    int odd = substPotentialInPaths(oddPaths);
-    int evenFromA = substPotentialInPaths(evenPathsFromA);
-    int evenFromB = substPotentialInPaths(evenPathsFromB);
+    int odd = substPotentialInPaths(oddPaths, oddPath, pathTable, &count);
+    int evenFromA = substPotentialInPaths(evenPathsFromA, evenPath, pathTable, &count);
+    int evenFromB = substPotentialInPaths(evenPathsFromB, evenPath, pathTable, &count);
 
     int substPotential = c + odd + evenFromA + evenFromB;
 
+    for(byte i = 0; i < 128; ++i) {
+        if (pathToStr(i) != NULL )
+            printPath(i, std::cout) << " = " << (int)i << "\t" << pathTable[i] << std::endl;
+    }
+
     return substPotential;
+
 }
+
+int AdjacencyGraph::getU(int *pathTable) {
+    int u = 0;
+    while (pathTable[AAab4] > 0 && pathTable[BBab4] > 0) {
+        ++u;
+        --pathTable[AAab4];
+        --pathTable[BBab4];
+    }
+    return u;
+}
+
+int AdjacencyGraph::getV(int *pathTable) {
+    int v = 0;
+    while (pathTable[AAab4] > 1 && pathTable[BBa1] > 0 && pathTable[BBb1] > 0) {
+        ++v;
+        --pathTable[AAab4];
+        --pathTable[AAab4];
+        --pathTable[BBa1];
+        --pathTable[BBb1];
+    }
+    while (pathTable[BBab4] > 1 && pathTable[AAa1] > 0 && pathTable[AAb1] > 0) {
+        ++v;
+        --pathTable[BBab4];
+        --pathTable[BBab4];
+        --pathTable[AAa1];
+        --pathTable[AAb1];
+    }
+    return v;
+}
+
+int AdjacencyGraph::getW(int *pathTable) {
+    int w = 0, oldw = 0;
+    do {
+        oldw = w;
+        while (pathTable[AAab4] > 0 && pathTable[BBa1] > 0 &&
+                pathTable[ABab4] > 0) {
+            ++w;
+            --pathTable[AAab4];
+            --pathTable[BBa1];
+            --pathTable[ABab4];
+        }
+        while (pathTable[AAab4] > 0 && pathTable[BBb1] > 0 &&
+                pathTable[ABba4] > 0) {
+            ++w;
+            --pathTable[AAab4];
+            --pathTable[BBb1];
+            --pathTable[ABba4];
+        }
+        while (pathTable[BBab4] > 0 && pathTable[AAa1] > 0 &&
+                pathTable[ABba4] > 0) {
+            ++w;
+            --pathTable[BBab4];
+            --pathTable[AAa1];
+            --pathTable[ABba4];
+        }
+        while (pathTable[BBab4] > 0 && pathTable[AAb1] > 0 &&
+                pathTable[ABab4] > 0) {
+            ++w;
+            --pathTable[BBab4];
+            --pathTable[AAb1];
+            --pathTable[ABab4];
+        }
+        while (pathTable[AAab4] > 1 && pathTable[BBa1] > 0) {
+            ++w;
+            ++pathTable[AAb3];
+            --pathTable[AAab4];
+            --pathTable[AAab4];
+            --pathTable[BBa1];
+        }
+        while (pathTable[AAab4] > 1 && pathTable[BBb1] > 0) {
+            ++w;
+            ++pathTable[AAa3];
+            --pathTable[AAab4];
+            --pathTable[AAab4];
+            --pathTable[BBb1];
+        }
+        while (pathTable[BBab4] > 1 && pathTable[AAa1] > 0) {
+            ++w;
+            ++pathTable[BBb3];
+            --pathTable[BBab4];
+            --pathTable[BBab4];
+            --pathTable[AAa1];
+        }
+        while (pathTable[BBab4] > 1 && pathTable[AAb1] > 0) {
+            ++w;
+            ++pathTable[BBa3];
+            --pathTable[BBab4];
+            --pathTable[BBab4];
+            --pathTable[AAb1];
+        }
+    } while (oldw != w);
+    return w;
+}
+
+int AdjacencyGraph::getX(int *pathTable) {
+    int x = 0, oldx = 0;
+    do {
+        oldx = x;
+        while (pathTable[AAab4] > 1) {
+            ++x;
+            ++pathTable[AAa3];
+            ++pathTable[AAb3];
+            --pathTable[AAab4];
+            --pathTable[AAab4];
+        }
+        while (pathTable[BBab4] > 1) {
+            ++x;
+            ++pathTable[BBa3];
+            ++pathTable[BBb3];
+            --pathTable[BBab4];
+            --pathTable[BBab4];
+        }
+        while (pathTable[AAab4] > 0 && pathTable[ABab4]) {
+            ++x;
+            ++pathTable[AAa3];
+            --pathTable[AAab4];
+            --pathTable[ABab4];
+        }
+        while (pathTable[AAab4] > 0 && pathTable[ABba4] > 0) {
+            ++x;
+            ++pathTable[AAb3];
+            --pathTable[AAab4];
+            --pathTable[ABba4];
+        }
+        while (pathTable[BBab4] > 0 && pathTable[ABab4] > 0) {
+            ++x;
+            ++pathTable[BBb3];
+            --pathTable[BBab4];
+            --pathTable[ABab4];
+        }
+        while (pathTable[BBab4] > 0 && pathTable[ABba4] > 0) {
+            ++x;
+            ++pathTable[BBa3];
+            --pathTable[BBab4];
+            --pathTable[ABba4];
+        }
+        while (pathTable[AAa1] > 0 && pathTable[BBab4] > 0) {
+            ++x;
+            ++pathTable[ABab4];
+            --pathTable[AAa1];
+            --pathTable[BBab4];
+        }
+        while (pathTable[AAb1] > 0 && pathTable[BBab4] > 0) {
+            ++x;
+            ++pathTable[ABba4];
+            --pathTable[AAb1];
+            --pathTable[BBab4];
+        }
+        while (pathTable[AAab4] > 0 && pathTable[BBa1] > 0) {
+            ++x;
+            ++pathTable[ABba4];
+            --pathTable[AAab4];
+            --pathTable[BBa1];
+        }
+        while (pathTable[AAab4] > 0 && pathTable[BBb1] > 0) {
+            ++x;
+            ++pathTable[ABab4];
+            --pathTable[AAab4];
+            --pathTable[BBb1];
+        }
+        while (pathTable[AAab2] > 0 && pathTable[BBab4] > 0) {
+            ++x;
+            --pathTable[AAab2];
+            --pathTable[BBab4];
+        }
+        while (pathTable[AAab4] > 0 && pathTable[BBab2] > 0) {
+            ++x;
+            --pathTable[AAab4];
+            --pathTable[BBab2];
+        }
+        while (pathTable[AAab2] > 0 && pathTable[BBab2] > 0) {
+            ++x;
+            --pathTable[AAab2];
+            --pathTable[BBab2];
+        }
+        while (pathTable[AAa3] > 0 && pathTable[BBab4] > 0) {
+            ++x;
+            --pathTable[AAa3];
+            --pathTable[BBab4];
+        }
+        while (pathTable[AAb3] > 0 && pathTable[BBab4] > 0) {
+            ++x;
+            --pathTable[AAb3];
+            --pathTable[BBab4];
+        }
+        while (pathTable[AAab4] > 0 && pathTable[BBa3] > 0) {
+            ++x;
+            --pathTable[AAab4];
+            --pathTable[BBa3];
+        }
+        while (pathTable[AAab4] > 0 && pathTable[BBb3] > 0) {
+            ++x;
+            --pathTable[AAab4];
+            --pathTable[BBb3];
+        }
+        while (pathTable[AAa1] > 0 && pathTable[BBa1] > 0) {
+            ++x;
+            --pathTable[AAa1];
+            --pathTable[BBa1];
+        }
+        while (pathTable[AAb1] > 0 && pathTable[BBb1] > 0) {
+            ++x;
+            --pathTable[AAb1];
+            --pathTable[BBb1];
+        }
+        while (pathTable[AAa1] > 0 && pathTable[BBab2] > 0) {
+            ++x;
+            --pathTable[AAa1];
+            --pathTable[BBab2];
+        }
+        while (pathTable[AAb1] > 0 && pathTable[BBab2] > 0) {
+            ++x;
+            --pathTable[AAb1];
+            --pathTable[BBab2];
+        }
+        while (pathTable[AAab2] > 0 && pathTable[BBa1] > 0) {
+            ++x;
+            --pathTable[AAab2];
+            --pathTable[BBa1];
+        }
+        while (pathTable[AAab2] > 0 && pathTable[BBb1] > 0) {
+            ++x;
+            --pathTable[AAab2];
+            --pathTable[BBb1];
+        }
+        while (pathTable[AAa1] > 0 && pathTable[BBa3] > 0) {
+            ++x;
+            --pathTable[AAa1];
+            --pathTable[BBa3];
+        }
+        while (pathTable[AAb1] > 0 && pathTable[BBb3] > 0) {
+            ++x;
+            --pathTable[AAb1];
+            --pathTable[BBb3];
+        }
+        while (pathTable[AAa3] > 0 && pathTable[BBa1] > 0) {
+            ++x;
+            --pathTable[AAa3];
+            --pathTable[BBa1];
+        }
+        while (pathTable[AAb3] > 0 && pathTable[BBb1] > 0) {
+            ++x;
+            --pathTable[AAb3];
+            --pathTable[BBb1];
+        }
+        while (pathTable[ABab4] > 0 && pathTable[ABba4] > 0) {
+            ++x;
+            --pathTable[ABab4];
+            --pathTable[ABba4];
+        }
+    } while (oldx != x);
+    return x;
+}
+
+int AdjacencyGraph::getY(int *pathTable) {
+    int y = 0;
+    while (pathTable[ABab4] > 1 && pathTable[AAb1] > 0 && pathTable[BBa1] > 0) {
+        ++y;
+        --pathTable[ABab4];
+        --pathTable[ABab4];
+        --pathTable[AAb1];
+        --pathTable[BBa1];
+    }
+    while (pathTable[ABba4] > 1 && pathTable[AAa1] > 0 && pathTable[BBb1] > 0) {
+        ++y;
+        --pathTable[ABba4];
+        --pathTable[ABba4];
+        --pathTable[AAa1];
+        --pathTable[BBb1];
+    }
+    return y;
+}
+
+
+int AdjacencyGraph::getZ(int *pathTable) {
+    int z = 0, oldz = 0;
+    do {
+        oldz = z;
+        while (pathTable[ABab4] > 0 && pathTable[AAab2] > 0 &&
+                pathTable[BBa3] > 0) {
+            ++z;
+            --pathTable[ABab4];
+            --pathTable[AAab2];
+            --pathTable[BBa3];
+        }
+        while (pathTable[ABba4] > 0 && pathTable[AAab2] > 0 &&
+                pathTable[BBb3] > 0) {
+            ++z;
+            --pathTable[ABba4];
+            --pathTable[AAab2];
+            --pathTable[BBb3];
+        }
+        while (pathTable[ABba4] > 0 && pathTable[AAa3] > 0 &&
+                pathTable[BBab2] > 0) {
+            ++z;
+            --pathTable[ABba4];
+            --pathTable[AAa3];
+            --pathTable[BBab2];
+        }
+        while (pathTable[ABab4] > 0 && pathTable[AAb3] > 0 &&
+                pathTable[BBab2] > 0) {
+            ++z;
+            --pathTable[ABab4];
+            --pathTable[AAb3];
+            --pathTable[BBab2];
+        }
+        while (pathTable[ABab4] > 0 && pathTable[AAb1] > 0 &&
+                pathTable[BBa3] > 0) {
+            ++z;
+            --pathTable[ABab4];
+            --pathTable[AAb1];
+            --pathTable[BBa3];
+        }
+        while (pathTable[ABab4] > 0 && pathTable[AAb3] > 0 &&
+                pathTable[BBa1] > 0) {
+            ++z;
+            --pathTable[ABab4];
+            --pathTable[AAb3];
+            --pathTable[BBa1];
+        }
+        while (pathTable[ABba4] > 0 && pathTable[AAa1] > 0 &&
+                pathTable[BBb3] > 0) {
+            ++z;
+            --pathTable[ABba4];
+            --pathTable[AAa1];
+            --pathTable[BBb3];
+        }
+        while (pathTable[ABba4] > 0 && pathTable[AAa3] > 0 &&
+                pathTable[BBb1] > 0) {
+            ++z;
+            --pathTable[ABba4];
+            --pathTable[AAa3];
+            --pathTable[BBb1];
+        }
+        while (pathTable[ABab4] > 0 && pathTable[AAb1] > 0 &&
+                pathTable[BBa1] > 0) {
+            ++z;
+            ++pathTable[ABba4];
+            --pathTable[ABab4];
+            --pathTable[AAb1];
+            --pathTable[BBa1];
+        }
+        while (pathTable[ABba4] > 0 && pathTable[AAa1] > 0 &&
+                pathTable[BBb1] > 0) {
+            ++z;
+            ++pathTable[ABab4];
+            --pathTable[ABba4];
+            --pathTable[AAa1];
+            --pathTable[BBb1];
+        }
+        while (pathTable[ABab4] > 1 && pathTable[AAb1] > 0) {
+            ++z;
+            ++pathTable[AAa3];
+            --pathTable[ABab4];
+            --pathTable[ABab4];
+            --pathTable[AAb1];
+        }
+        while (pathTable[ABab4] > 1 && pathTable[BBa1] > 0) {
+            ++z;
+            ++pathTable[BBb3];
+            --pathTable[ABab4];
+            --pathTable[ABab4];
+            --pathTable[BBa1];
+        }
+        while (pathTable[ABba4] > 1 && pathTable[AAa1] > 0) {
+            ++z;
+            ++pathTable[AAb3];
+            --pathTable[ABba4];
+            --pathTable[ABba4];
+            --pathTable[AAa1];
+        }
+        while (pathTable[ABba4] > 1 && pathTable[BBb1] > 0) {
+            ++z;
+            ++pathTable[BBa3];
+            --pathTable[ABba4];
+            --pathTable[ABba4];
+            --pathTable[BBb1];
+        }
+    } while (oldz != z);
+    return z;
+}
+
+int AdjacencyGraph::getK(int numRuns) {
+    if (numRuns == 0)
+    {
+    } else if (numRuns % 4 == 0) {
+        return 4;
+    } else {
+        return numRuns % 4;
+    }
+}
+
+// k = 0 means epsilon
+byte AdjacencyGraph::pathToByte(WhichGenome firstElementIn,
+                WhichGenome lastElementIn,
+                WhichGenome firstRunIn,
+                WhichGenome lastRunIn, int k) {
+  byte ret = 0;
+
+  if (firstElementIn == genomeB && lastElementIn == genomeA) {
+     // replaces BA?? for AB??
+    firstElementIn = genomeA;
+    lastElementIn = genomeB;
+    if (firstRunIn == genomeA && lastRunIn == genomeB) {
+      firstRunIn = genomeB;
+      lastRunIn == genomeA;
+    } else if (firstRunIn == genomeB && lastRunIn == genomeA) {
+      firstRunIn = genomeA;
+      lastRunIn == genomeB;
+    }
+  } else if (firstElementIn == lastElementIn) {
+    // replaces AAba+2, AAba+4, BBba+2, BBba+4 for
+    //          AAab+2, AAab+4, BBab+2, BBab+4
+    if (firstRunIn == genomeB && lastRunIn == genomeA) {
+      firstRunIn = genomeA;
+      lastRunIn = genomeB;
+    }
+  }
+
+  if (firstElementIn == genomeB) {
+    ret |= 64; // 64 = 1000000b
+  }
+  if (lastElementIn == genomeB) {
+    ret |= 32; // 32 = 100000b
+  }
+  if (k > 0) {
+    if (firstRunIn == genomeB) {
+      ret |= 16; // 16 = 10000b
+    }
+    if (k%2 == 0) {
+      if (lastRunIn == genomeB) {
+        ret |= 8; // 16 = 1000b
+      }
+    }
+    ret |= k & 7 ; //  K & 111b == k2 k1 k0
+  }
+  return ret;
+}
+
+const char *AdjacencyGraph::pathToStr(byte representation) {
+    static const
+    char *strByte[] = { "AAe"   , "AAa+1" , NULL     , "AAa+3" , NULL     ,
+                        NULL    , NULL    , NULL     , NULL    , NULL     ,
+             /* 10 */   "AAab+2", NULL    , "AAab+4" , NULL    , NULL     ,
+                        NULL    , NULL    , "AAb+1"  , NULL    , "AAb+3"  ,
+             /* 20 */   NULL    , NULL    , NULL     , NULL    , NULL     ,
+                        NULL    , NULL    , NULL     , NULL    , NULL     ,
+             /* 30 */   NULL    , NULL    , "ABe"    , "ABa+1" , NULL     ,
+                        "ABa+3" , NULL    , NULL     , NULL    , NULL     ,
+             /* 40 */   NULL    , NULL    , "ABab+2" , NULL    , "ABab+4" ,
+                        NULL    , NULL    , NULL     , NULL    , "ABb+1"  ,
+             /* 50 */   "ABba+2", "ABb+3" , "ABba+4" , NULL    , NULL     ,
+                        NULL    , NULL    , NULL     , NULL    , NULL     ,
+             /* 60 */   NULL    , NULL    , NULL     , NULL    , NULL     ,
+                        NULL    , NULL    , NULL     , NULL    , NULL     ,
+             /* 70 */   NULL    , NULL    , NULL     , NULL    , NULL     ,
+                        NULL    , NULL    , NULL     , NULL    , NULL     ,
+             /* 80 */   NULL    , NULL    , NULL     , NULL    , NULL     ,
+                        NULL    , NULL    , NULL     , NULL    , NULL     ,
+             /* 90 */   NULL    , NULL    , NULL     , NULL    , NULL     ,
+                        NULL    , "BBe"   , "BBa+1"  , NULL    , "BBa+3"  ,
+             /*100 */   NULL    , NULL    , NULL     , NULL    , NULL     ,
+                        NULL    , "BBab+2", NULL     , "BBab+4", NULL     ,
+             /*110 */   NULL    , NULL    , NULL     , "BBb+1" , NULL     ,
+                        "BBb+3" , NULL    , NULL     , NULL    , NULL     ,
+             /*120 */   NULL    , NULL    , NULL     , NULL    , NULL     ,
+                        NULL    , NULL    , NULL };
+    return strByte[representation];
+}
+
+std::ostream &AdjacencyGraph::printPath(byte representation,
+                                        std::ostream &os) {
+      const char *str = pathToStr(representation);
+      if (str != NULL)
+          os << str;
+      else
+          os << "invalid";
+      return os;
+  }
 
 /*
  * Determinar o número de runs nos ciclos
@@ -621,11 +1121,20 @@ int AdjacencyGraph::substPotentialInCycles(std::deque< std::pair<WhichGenome,int
  * Determinar o número de runs nos caminhos pares e ímpares
  */
 
-int AdjacencyGraph::substPotentialInPaths(std::deque<Path> paths)
+int AdjacencyGraph::substPotentialInPaths(std::deque<Path> paths,
+                                int parity, int *pathTable, int *count)
 {
     WhichGenome lastLabelIn = undef;
     WhichGenome whereThis = undef;
-    
+
+    WhichGenome startsRunIn = undef;
+    WhichGenome endsRunIn = undef;
+
+    WhichGenome startsPathIn = undef;
+    WhichGenome endsPathIn = undef;
+
+    int k;
+
     int aRuns, bRuns, numRuns;
     int i, idx, temp;
     int first; // Condição de parada do ciclo
@@ -649,6 +1158,35 @@ int AdjacencyGraph::substPotentialInPaths(std::deque<Path> paths)
 
         i = p.start;
 
+        if(parity == 1)
+        {
+            // Odd Path
+            if(p.startsIn == genomeA)
+            {
+                startsPathIn = genomeA;
+                endsPathIn = genomeB;
+            }
+            else if(p.startsIn == genomeB)
+            {
+                startsPathIn = genomeB;
+                endsPathIn = genomeA;
+            }
+        }
+        else if(parity == 2)
+        {
+            // Even Path
+            if(p.startsIn == genomeA)
+            {
+                startsPathIn = genomeA;
+                endsPathIn = genomeA;
+            }
+            else if(p.startsIn == genomeB)
+            {
+                startsPathIn = genomeB;
+                endsPathIn = genomeB;
+            }
+        }
+
         if(p.startsIn == genomeA)
         {
             whereThis = genomeA;
@@ -667,10 +1205,13 @@ int AdjacencyGraph::substPotentialInPaths(std::deque<Path> paths)
             idx = locTable[-i].head;
 
         for(;;)
-        {
+        {   
             // A adjacencia possui label?
             if(!adjTable[idx].label.empty())
             {
+                if(startsRunIn == undef)
+                    startsRunIn = whereThis;
+
                 if(lastLabelIn != whereThis)
                 {
                     if(whereThis == genomeA)
@@ -683,8 +1224,10 @@ int AdjacencyGraph::substPotentialInPaths(std::deque<Path> paths)
 
             // Condição de parada
             if(i == 0)
+            {
+                endsRunIn = lastLabelIn;
                 break;
-
+            }
             // Atualizando a adjacencia
             if(whereThis == genomeA)
             {
@@ -717,11 +1260,14 @@ int AdjacencyGraph::substPotentialInPaths(std::deque<Path> paths)
             substP = 0;
 
         substPTotal = substPTotal + substP;
+
+        k = getK(numRuns);
+
+        byte type = pathToByte(startsPathIn, endsPathIn, startsRunIn, endsRunIn, k);
+        pathTable[type]++;
     }
     return substPTotal;
 }
-
-
 
 bool Adjacency::isTelomere()
 {
