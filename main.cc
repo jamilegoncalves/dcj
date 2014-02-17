@@ -6,9 +6,17 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    //Genome *a = new Genome("Genome A", "-1 19 | 2 20 3 | -7 -4 6 | 5 23 24 9 -11 12 | -8 -10 28 |");
-    //Genome *b = new Genome("Genome B", "-1 -2 -3 21 -4 -7 22 6 | -5 -9 25 11 -12 26 8 10 27");
-
+    Genome *a;
+    Genome *b;
+    
+    try {
+        a = new Genome("Genome A", "-1 19 | 2 20 3 | -7 -4 6 | 5 23 24 9 -11 12 | -8 -10 28 |");
+        b = new Genome("Genome B", "-1 -2 -3 21 -4 -7 22 6 | -5 -9 25 11 -12 26 8 10 27|");
+    } catch (const char *err) {
+        std::cerr << err << std::endl;
+        return 1;
+    }
+/*
     		    Chromosome *a1 = new Chromosome("chrA1", true);
 
 		    a1->genes.push_back(-1);
@@ -74,7 +82,7 @@ int main(int argc, char *argv[])
 		    Genome *b = new Genome("Genome B");
 		    b->chromosomes.push_back(b1);
                     b->chromosomes.push_back(b2);
-
+*/
 		    AdjacencyGraph *ag = new AdjacencyGraph(a,b);
 
 		    //std::cout << "Distancia pelo SortingByDCJ: " << ag->sortByDCJ() << std::endl;

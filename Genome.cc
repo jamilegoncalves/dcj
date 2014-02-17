@@ -17,15 +17,80 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Genome.h"
+#include <queue>
+#include <stdlib.h> 
 
+/*
 Genome::Genome(std::string name)
 {
     this->name = name;
 }
+*/
 
 Genome::Genome(std::string name, std::string description)
 {
     this->name = name;
+
+    std::queue<int> q;
+
+    int i = 0;
+    int j, len;
+    bool isLinear;
+
+    while(i < description.length())
+    {
+        // discard white spaces
+        while (i < description.length() && isspace(description[i])) {
+            ++i;
+        }
+
+        j = description.find(" ", i+1);
+
+        if (j == std::string::npos) {
+            j = description.find("|", i+1);
+        }
+        if (j == std::string::npos) {
+            j = description.find(")", i+1);
+        }
+        if (j == std::string::npos) {
+           len = std::string::npos;
+        } else {
+            len = j-i;
+        }
+
+        if( (description[i] == '|') || (description[i] == ')') )
+        {
+            if(description[i] == '|')
+                isLinear == true;
+            else
+                isLinear = false;
+
+            if (q.empty()) {
+                throw (const char *)"Empty chromosome!";
+            }
+
+            Chromosome *c = new Chromosome("chrC", isLinear);
+
+            while(!q.empty())
+            {
+                c->genes.push_back(q.front());
+                q.pop();
+            }     
+            chromosomes.push_back(c);
+        }
+        else {
+            int gene = atoi(description.substr(i, len).c_str());
+            q.push(gene);
+        }
+        if (j != std::string::npos) {
+          i = j;
+        } else {
+            i = description.length();
+        }
+    }
+    if (!q.empty()) {
+        throw (const char *)"Genome syntax error!";
+    }
 }
 
 /**

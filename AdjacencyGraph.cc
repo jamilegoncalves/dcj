@@ -34,6 +34,7 @@ AdjacencyGraph::AdjacencyGraph(Genome *a, Genome *b)
     n = a->numGenes();
 
     adjA = adjB = NULL;
+    labelsInA = labelsInB = NULL;
 
     findLabels(a, b);
     
@@ -493,10 +494,10 @@ int AdjacencyGraph::DCJsubstDistance(Genome *a)
     int pathTable[128] = { 0 };
     int sigma = substPotential(pathTable);
 
-    int u = getU(pathTable); // arrumar
+    int u = getU(pathTable);
     int v = getV(pathTable);
-    int w = getW(pathTable); // arrumar
-    int x = getX(pathTable); // arrumar
+    int w = getW(pathTable);
+    int x = getX(pathTable);
     int y = getY(pathTable);
     int z = getZ(pathTable);
 
