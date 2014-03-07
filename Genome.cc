@@ -61,7 +61,7 @@ Genome::Genome(std::string name, std::string description)
         if( (description[i] == '|') || (description[i] == ')') )
         {
             if(description[i] == '|')
-                isLinear == true;
+                isLinear = true;
             else
                 isLinear = false;
 
@@ -90,6 +90,17 @@ Genome::Genome(std::string name, std::string description)
     }
     if (!q.empty()) {
         throw (const char *)"Genome syntax error!";
+    }
+
+    // Print
+    std::vector<Chromosome*>::iterator cIterator;
+    
+    for(cIterator = chromosomes.begin();
+            cIterator != chromosomes.end(); ++cIterator)
+    {
+        Chromosome *chr = *cIterator;
+    std::cout<< *chr << std::endl;
+
     }
 }
 

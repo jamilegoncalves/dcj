@@ -26,6 +26,8 @@
 #include <set>
 #include <bitset>
 
+std::ostream & operator<<(std::ostream &os, const std::vector<int> &l);
+
 AdjacencyGraph::AdjacencyGraph(Genome *a, Genome *b)
 {
     // Braga, Machado, Ribeiro e Stoye. Genomic distance
@@ -70,6 +72,7 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
     int numAdj = totalAdjacencies(g, labels);
 
     memset(locLabel, 0, adjacencyTableSize*sizeof(LocationLabel));
+    memset(loc, 0, adjacencyTableSize*sizeof(Location));
 
     std::vector<Chromosome*>::iterator cIterator;
 
@@ -80,125 +83,113 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
     {
         Chromosome *chr = *cIterator;
 
-        int l = labels[k].size();
-
-        int x = 1;
+        int geneIdx;
+        int numMarkers;
 
         if(chr->isLinear() == true)
         {
-            // Caso o cromossomo já comece com label
-            while(labels[k].begin() != labels[k].end() &&
-                    abs(*labels[k].begin()) == abs((*chr)[x]))
+            geneIdx = 1;
+            numMarkers = 0;
+
+            // while this gene is a label...
+            while (geneIdx <= chr->length() &&
+                   labels[k].find(abs((*chr)[geneIdx])) != labels[k].end())
             {
-                adj[offset+1].label.push_back((*chr)[x]);
-                labels[k].erase((*chr)[x]);
-                ++x;
+                adj[offset+1].label.push_back((*chr)[geneIdx]);
+                ++geneIdx;
             }
 
-            if(x != chr->length()+1)
+            if(geneIdx <= chr->length()) // if it's not a singleton
             {
-                adj[offset+1].first = (*chr)[x];
+                adj[offset+1].first = (*chr)[geneIdx];
                 adj[offset+1].second = 0;
+                ++numMarkers;
 
-                x = 1;
-
-                for(int j = x+1; j <= chr->numAdjacencies(chr, l); ++j)
+                while (geneIdx <= chr->length())
                 {
-                    adj[offset + j].first = -(*chr)[x];
-                    ++x;
-
-                    while(labels[k].begin() != labels[k].end() &&
-                            abs(*labels[k].begin()) == abs((*chr)[x]))
-                    {
-                        adj[offset + j].label.push_back((*chr)[x]);
-                        labels[k].erase((*chr)[x]);
-                        ++x;
+                    adj[offset+numMarkers+1].first = -(*chr)[geneIdx];
+                    adj[offset+numMarkers+1].second = 0;
+                    
+                    ++geneIdx;
+                    // while this gene is a label...
+                    while (geneIdx <= chr->length() &&
+                        labels[k].find(abs((*chr)[geneIdx])) != labels[k].end()) {
+                      adj[offset+numMarkers+1].label.push_back((*chr)[geneIdx]);
+                      ++geneIdx;
                     }
+                    ++numMarkers;
+                    
+                    if (geneIdx <= chr->length()) {
+                        adj[offset+numMarkers].second = (*chr)[geneIdx];
+                    }
+                }
 
-                    adj[offset + j].second = (*chr)[x];
-                } // End for
-            } // End if is not Singleton
+                offset += numMarkers;
+            }
             else // if is LinearSingleton
             {
                 adj[offset + 1].first = 0;
                 adj[offset + 1].second = 0;
                 linearSingleton.push_back(offset+1);
+                ++offset;
             }
         } // End if is Linear
         else // if it's a circular chromosome
         {
-            if(chr->length() == 1)
+            numMarkers = 0;
+
+            int i = -1, j = -1; // i = index of the first marker
+                                // j = index of the last marker
+            // while this gene is a label...
+            geneIdx = 1;
+            while (geneIdx <= chr->length() &&
+                   labels[k].find(abs((*chr)[geneIdx])) != labels[k].end())
             {
-                if(!labels[k].empty())
-                {
-                    adj[offset + 1].first = 0;
-                    adj[offset + 1].second = 0;
-                    adj[offset + 1].label.push_back((*chr)[x]);
-                    labels[k].erase((*chr)[x]);
-                    circularSingleton.push_back(offset+1); // Armazena a posição
-                                                      // do singleton circular
-                    ++x;
-                }
-                else
-                {
-                    adj[offset + 1].first = (*chr)[1];
-                    adj[offset + 1].second = -(*chr)[1];
-                }
+                adj[offset+1].label.push_back((*chr)[geneIdx]);
+                ++geneIdx;
             }
-            else
+            if(geneIdx <= chr->length()) {
+                i = geneIdx;
+                // iterate backwards
+                geneIdx = chr->length();
+                while (labels[k].find(abs((*chr)[geneIdx])) != labels[k].end())
+                {
+                    adj[offset+1].label.push_back((*chr)[geneIdx]);
+                    --geneIdx;
+                }
+                j = geneIdx;
+            }
+            if (i == -1) // if this chromosome has no markers
             {
-                bool endLabel = false;
-                // Caso o cromossomo já comece com label
-                while(labels[k].begin() != labels[k].end() &&
-                        abs(*labels[k].begin()) == abs((*chr)[x]))
-                {
-                    adj[offset+1].label.push_back((*chr)[x]);
-                    labels[k].erase((*chr)[x]);
-                    ++x;
-                }
-
-                if(x != chr->length()+1)
-                {
-                    adj[offset + 1].first = (*chr)[1];
-                    // Caso que termine com label
-                    while(labels[k].begin() != labels[k].end() &&
-                            abs(*labels[k].begin()) == abs((*chr)[chr->length()]))
-                    {
-                        adj[offset+1].label.push_back((*chr)[chr->length()]);
-                        labels[k].erase((*chr)[chr->length()]);
-                        endLabel = true;
-                        ++x;
-                    }
-                    if(endLabel == true)
-                        adj[offset + 1].second = - (*chr)[x];
-                    else
-                        adj[offset + 1].second = - (*chr)[chr->length()];
-
-                    x = 1;
-
-                    for(int j = x+1; j <= chr->numAdjacencies(chr, l); ++j)
-                    {
-                        adj[offset + j].first = - (*chr)[x];
-                        ++x;
-
-                        while(labels[k].begin() != labels[k].end() &&
-                                abs(*labels[k].begin()) == abs((*chr)[x]))
-                        {
-                            adj[offset + j].label.push_back((*chr)[x]);
-                            labels[k].erase((*chr)[x]);
-                            ++x;
-                        }
-                        
-                        adj[offset + j].second = (*chr)[x];
-                    }
-                }
-                else // if is a circular singleton
-                {
-                    adj[offset + 1].first = 0;
-                    adj[offset + 1].second = 0;
-                    circularSingleton.push_back(offset+1);
-                }
+                adj[offset+1].first = 0;
+                adj[offset+1].second = 0;
+                circularSingleton.push_back(geneIdx);
+                ++offset;
             }
+            else  // if this chromosome has at least one marker
+            {
+                geneIdx = i;
+                adj[offset+1].first = (*chr)[i];
+                adj[offset+1].second = -(*chr)[j];
+                ++numMarkers;
+
+                while(geneIdx < j)
+                {
+                    adj[offset + numMarkers + 1].first = -(*chr)[geneIdx];
+                    ++geneIdx;
+
+                    while (geneIdx <= j &&
+                           labels[k].find(abs((*chr)[geneIdx])) != labels[k].end())
+                    {
+                        adj[offset + numMarkers + 1].label.push_back((*chr)[geneIdx]);
+                        ++geneIdx;
+                    }
+                    adj[offset + numMarkers + 1].second = (*chr)[geneIdx];
+                    ++numMarkers;
+                }
+                offset += numMarkers;
+            }
+
         } // end else is circular
 
         for (int i = numAdj+1; i < adjacencyTableSize; ++i)
@@ -222,12 +213,11 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
                 for(std::vector<int>::iterator it = adj[i].label.begin();
                         it != adj[i].label.end(); it++)
                 {
-                    locLabel[abs(*it)].positionLabel = i;
+                    locLabel[*it].positionLabel = i;
                 }
             }
         }
         ++k;
-        offset = offset + chr->numAdjacencies(chr,l);
     } // end for each cromosome
 
     // Print
@@ -245,33 +235,29 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
     std::cout<< "Labels: ";
     for(int i = 1; i <= 7; ++i)
     {
-        for (std::vector<int>::iterator it = adj[i].label.begin(); it != adj[i].label.end(); it++)
-        {
-            std::cout << *it << ",";
-            // valor na posição apontada por it
-        }
+        std::cout<< adj[i].label << ",";
     }
     std::cout<< "\n";
 
     std::cout<< "Head: ";
-    for(int i = 1; i <= 5; ++i)
+    for(int i = 1; i <= 7; ++i)
         std::cout<< loc[i].head << ",";
 
     std::cout<< "\n";
 
     std::cout<< "tail: ";
-    for(int i = 1; i <= 5; ++i)
+    for(int i = 1; i <= 7; ++i)
         std::cout<< loc[i].tail << ",";
     std::cout<< "\n";
-
+/*
     std::cout<< "LocLabels: ";
     
-    for (int i=19; i <= 27; ++i)
+    for (int i=-20; i <= 25; ++i)
     {
         if(locLabel[i].positionLabel != 0)
             std::cout << locLabel[i].positionLabel << ",";
     }
-    
+*/
     std::cout<< "\n";
     std::cout<< "\n";
 
@@ -1197,6 +1183,7 @@ int AdjacencyGraph::substPotentialInPaths(std::deque<Path> paths,
         else if(p.startsIn == genomeB)
         {
             whereThis = genomeB;
+            adjTable = adjB;
             locTable = locB;
         }
 
@@ -1285,6 +1272,7 @@ bool Adjacency::isTelomere()
 void AdjacencyGraph::findLabels(Genome *a, Genome *b)
 {
     labels.clear();
+    numLabels = 0;
 
     std::set<int> markersA, markersB;
 
@@ -1296,7 +1284,6 @@ void AdjacencyGraph::findLabels(Genome *a, Genome *b)
 
     labelsInA = new std::set<int>[a->chromosomes.size()];
     labelsInB = new std::set<int>[b->chromosomes.size()];
-
 
     for(cIteratorA = a->chromosomes.begin();
             cIteratorA != a->chromosomes.end(); ++cIteratorA)
@@ -1389,4 +1376,18 @@ int Adjacency::setMinus(int x)
         return second;
     else
         return first;
+}
+
+std::ostream & operator<<(std::ostream &os, const std::vector<int> &l) {
+    std::vector<int>::const_iterator _it = l.begin();
+    os << "<";
+    while (_it != l.end()) {
+        if (_it != l.begin()) {
+            os << ",";
+        }
+        os << *_it;
+        ++_it;
+    }
+    os << ">";
+    return os;
 }
