@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <set>
 #include <bitset>
+#include <algorithm>
 
 std::ostream & operator<<(std::ostream &os, const std::vector<int> &l);
 
@@ -37,14 +38,19 @@ AdjacencyGraph::AdjacencyGraph(Genome *a, Genome *b)
 
     adjA = adjB = NULL;
     labelsInA = labelsInB = NULL;
+    WhichGenome whereThis = undef;
 
     findLabels(a, b);
-    
-    idxEndOfAdjA = constructTables(a, labelsInA, adjA, locA, locLabelA)+1;
-    idxEndOfAdjB = constructTables(b, labelsInB, adjB, locB, locLabelB)+1;
 
-    std::cout<< "Distância: "<< DCJsubstDistance(a);
-    std::cout<< "\n ";
+    whereThis = genomeA;
+    idxEndOfAdjA = constructTables(a, labelsInA, adjA, locA, locLabelA, whereThis)+1;
+    whereThis = genomeB;
+    idxEndOfAdjB = constructTables(b, labelsInB, adjB, locB, locLabelB, whereThis)+1;
+
+    sortByDCJsubst();
+
+    //std::cout<< "Distância: "<< DCJsubstDistance(a);
+    //std::cout<< "\n ";
 }
 
 AdjacencyGraph::~AdjacencyGraph()
@@ -60,7 +66,8 @@ AdjacencyGraph::~AdjacencyGraph()
  */
 int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
         Adjacency *&adj,
-        Location *&loc, LocationLabel *&locLabel)
+        Location *&loc, LocationLabel *&locLabel,
+        WhichGenome whereThis)
 {
     int n = g->numGenes();
     int adjacencyTableSize = 3*n + 2;
@@ -130,7 +137,12 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
             {
                 adj[offset + 1].first = 0;
                 adj[offset + 1].second = 0;
-                linearSingleton.push_back(offset+1);
+                
+                if(whereThis == genomeA)
+                    linearSingletonInA.push_back(offset+1);
+                if(whereThis == genomeB)
+                    linearSingletonInB.push_back(offset+1);
+
                 ++offset;
             }
         } // End if is Linear
@@ -163,7 +175,12 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
             {
                 adj[offset+1].first = 0;
                 adj[offset+1].second = 0;
-                circularSingleton.push_back(geneIdx);
+
+                if(whereThis == genomeA)
+                    circularSingletonInA.push_back(geneIdx);
+                if(whereThis == genomeB)
+                    circularSingletonInB.push_back(geneIdx);
+
                 ++offset;
             }
             else  // if this chromosome has at least one marker
@@ -468,13 +485,222 @@ int AdjacencyGraph::getLengthFromB(int i, int *idxLast)
     return length;
 }
 
+int AdjacencyGraph::sortByDCJsubst()
+{
+    Adjacency u, v, tempU, tempV;
+    std::stack<int> vacancies;
+
+    int dist = 0;
+
+    // iterate over all adjacencies of genome B
+    for(int i = 1; adjB[i].first != END_OF_TABLE; ++i)
+    {
+        // if it is an adjacency
+        if(adjB[i].isAdjacency())
+        {
+            int idxU, idxV;
+            int p = adjB[i].first, q = adjB[i].second;
+
+            // let u be the element of genome A that contains p
+            if(p > 0)
+            {
+                idxU = locA[p].tail;
+                u = adjA[idxU];
+            }
+            else
+            {
+                idxU = locA[-p].head;
+                u = adjA[idxU];
+            }
+
+            // let v be the element of genome A that contains q
+            if(q > 0)
+            {
+                idxV = locA[q].tail;
+                v = adjA[idxV];
+            }
+            else
+            {
+                idxV = locA[-q].head;
+                v = adjA[idxV];
+            }
+
+            // if u != v then
+            if( !u.equals(v) )
+            {
+                std::cout << "Cut: " << u.first << "," << u.second
+                                                << std::endl;
+                std::cout << "Cut: " << v.first << "," << v.second
+                                                << std::endl;
+                // replace u in A by {p,q}
+                tempU.first = p;
+                tempU.second = q;
+                
+                while(!u.label.empty())
+                {
+                    tempU.label.push_back(u.label.back());
+                    u.label.pop_back();
+                }
+                
+                while(!v.label.empty())
+                {
+                    tempU.label.push_back(v.label.back());
+                    v.label.pop_back();
+                }
+
+                // replace v in A by (u\{p}) U (v\{q})
+                tempV.first = u.setMinus(p);
+                tempV.second = v.setMinus(q);
+
+                // TODO: Verificar caso dos Singletons
+                if (tempV.first == 0)
+                {
+                    if(tempV.second == 0)
+                        vacancies.push(idxV);
+                    else
+                    {
+                        tempV.first = tempV.second;
+                        tempV.second = 0;
+                    }
+                }
+
+                std::cout << "Join: " << tempU.first << ","
+                                            << tempU.second << std::endl;
+                std::cout << "Join: " << tempV.first << ","
+                                            << tempV.second << std::endl;
+
+                // Altero a Tabela AdjA:
+                adjA[idxU] = tempU;
+                adjA[idxV] = tempV;
+
+                // Altero a Tabela LocA:
+                if(adjA[idxU].first > 0)
+                    locA[adjA[idxU].first].tail = idxU;
+                else
+                    locA[-adjA[idxU].first].head = idxU;
+
+                if(adjA[idxU].second > 0)
+                    locA[adjA[idxU].second].tail = idxU;
+                else
+                    locA[-adjA[idxU].second].head = idxU;
+
+                if(adjA[idxV].first > 0)
+                    locA[adjA[idxV].first].tail = idxV;
+                else
+                    locA[-adjA[idxV].first].head = idxV;
+
+                if(adjA[idxV].second > 0)
+                    locA[adjA[idxV].second].tail = idxV;
+                else
+                    locA[-adjA[idxV].second].head = idxV;
+
+                if(!adjA[idxU].label.empty())
+                {
+                    for(std::vector<int>::iterator it = adjA[idxU].label.begin();
+                            it != adjA[idxU].label.end(); it++)
+                    {
+                        locLabelA[*it].positionLabel = idxU;
+                    }
+                }
+
+                //print();
+                ++dist;
+                std::cout << "Distancia: " << dist << std::endl;
+            }
+        } // end if adjacency
+    }// end for
+
+    // iterate over all telomeres of genome B
+    for(int i = 1; adjB[i].first != END_OF_TABLE; ++i)
+    {
+        // if it is a telomere in B
+        if (adjB[i].isTelomere())
+        {
+
+            int idxU, idxV;
+            int p = adjB[i].first;
+
+            // let u be the element of genome A that contains p
+            if(p > 0)
+            {
+                idxU = locA[p].tail;
+                u = adjA[idxU];
+            }
+            else
+            {
+                idxU = locA[- p].head;
+                u = adjA[idxU];
+            }
+
+            // if u is an adjacency
+            if(u.isAdjacency())
+            {
+                std::cout << "Cut: " << u.first << "," << u.second
+                                                << std::endl;
+
+                // replace u in A by {p} ...
+                tempU.first = p;
+                tempU.second = 0;
+
+                std::cout << "Join: " << tempU.first << ","
+                                            << tempU.second << std::endl;
+
+                // Altero Tabela AdjA:
+                adjA[idxU] = tempU;
+
+                // Altero Tabela LocA:
+                if(tempU.first > 0)
+                    locA[tempU.first].tail = idxU;
+                else
+                    locA[-tempU.first].head = idxU;
+
+                // ... and (u\{p})
+                tempV.first = u.setMinus(p);
+                tempV.second = 0;
+
+                std::cout << "Join: " << tempV.first << ","
+                                            << tempV.second << std::endl;
+
+                if(vacancies.empty())
+                {
+                    idxV = idxEndOfAdjA;
+                    ++idxEndOfAdjA;
+                }
+                else
+                {
+                    idxV = vacancies.top();
+                    vacancies.pop();
+                }
+                if(adjA[idxU].second > 0)
+                    locA[adjA[idxU].second].tail = idxU;
+                else
+                    locA[-adjA[idxU].second].head = idxU;
+
+                ++dist;
+
+                //print();
+
+                std::cout << "Distancia: " << dist << std::endl;
+            } // end if u is an adjacency
+        } // end if telomere
+    }// end for
+
+    return dist;
+}
+
+bool Adjacency::equals(Adjacency &a)
+{
+    return((first == a.first)&&(second==a.second)
+                            || (first==a.second)&&(second==a.first));
+}
+
 int AdjacencyGraph::DCJsubstDistance(Genome *a)
 {
     paths();
 
     int g = a->numGenes() - numLabels;
-    int pL = linearSingleton.size();
-    int pC = circularSingleton.size();
+    int pL = std::min( linearSingletonInA.size(), linearSingletonInB.size() );
+    int pC = std::min( circularSingletonInA.size(), circularSingletonInB.size() );
     int b = oddPaths.size() + adjacencies.size();
     int c = cycles.size();
     int pathTable[128] = { 0 };

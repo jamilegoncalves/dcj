@@ -10,10 +10,12 @@ int main(int argc, char *argv[])
     Genome *b;
     
     try {
-        //a = new Genome("Genome A", "-1 19 | 2 20 3 | -7 -4  6 | 5 23 24 9 -11 12 | -8 -10 28 |");
-        //b = new Genome("Genome B", "-1 -2 -3 21 -4 -7 22 -6 | -5 -9 25 11 -12 26 8 10 27 |");
-        a = new Genome("Genome A", "1 19 5 -20 3 | 4 21 2 ) 26 -27 )");
+        a = new Genome("Genome A", "1 19 5 -20 3 | 4 21 2 |");
         b = new Genome("Genome B", "1 23 24 2 3 25 4 5 |");
+        //a = new Genome("Genome A", "1 19 5 -20 3 | 4 21 2 ) 26 -27 )");
+        //b = new Genome("Genome B", "1 23 24 2 3 25 4 5 |");
+        //a = new Genome("Genome A", "1 19 5 -20 3 | 4 21 2 ) 26 -27 )");
+        //b = new Genome("Genome B", "1 23 24 2 3 25 4 5 |");
     } catch (const char *err) {
         std::cerr << err << std::endl;
         return 1;

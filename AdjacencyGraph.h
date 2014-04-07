@@ -39,15 +39,12 @@ public:
 
     bool isAdjacency();
     bool isTelomere();
+    bool equals(Adjacency &a);
 
     /* returns this \ {x}  */
     int setMinus(int x);
 private:
     bool circularSingleton;
-
-/*
-    bool equals(Adjacency& other);
-    */
 };
 
 typedef enum{undef, genomeA, genomeB} WhichGenome;
@@ -101,7 +98,7 @@ class AdjacencyGraph
      * @returns Número de adjacências
      */
     int constructTables(Genome *g,  std::set<int> *labels, Adjacency *&adj,
-            Location *&loc, LocationLabel *&locLabel);
+            Location *&loc, LocationLabel *&locLabel,  WhichGenome whereThis);
 
     /**
      * Armazena:
@@ -142,6 +139,8 @@ class AdjacencyGraph
 
     int totalAdjacencies(Genome *g, std::set<int> *labels);
 
+    int sortByDCJsubst();
+
     int DCJsubstDistance(Genome *a);
 
     Genome *a;
@@ -149,9 +148,10 @@ class AdjacencyGraph
     std::set<int> labels;
     std::set<int> *labelsInA, *labelsInB;
     // Armazena a posição do Singleton Circular
-    std::vector <int> circularSingleton;
-    std::vector <int> linearSingleton;
-
+    std::vector <int> circularSingletonInA;
+    std::vector <int> circularSingletonInB;
+    std::vector <int> linearSingletonInA;
+    std::vector <int> linearSingletonInB;
     int n;
 };
 
