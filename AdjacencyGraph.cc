@@ -528,34 +528,206 @@ int AdjacencyGraph::sortByDCJsubst()
             // if u != v then
             if( !u.equals(v) )
             {
-                std::cout << "Cut: " << u.first << "," << u.second
-                                                << std::endl;
-                std::cout << "Cut: " << v.first << "," << v.second
-                                                << std::endl;
-                // replace u in A by {p,q}
-                tempU.first = p;
-                tempU.second = q;
-                
-                while(!u.label.empty())
+                if(!adjB[i].label.empty())
                 {
-                    tempU.label.push_back(u.label.back());
-                    u.label.pop_back();
+                    // Caso 1
+                    if( (v.second == q) && (u.first == p) )
+                    {
+                        // replace u in A by {p,q}
+                        tempU.first = p;
+                        tempU.label.clear();
+                        tempU.second = q;
+
+                        for(std::vector<int>::iterator it = u.label.begin();
+                                it != u.label.end(); it++)
+                        {
+                            tempU.label.push_back(*it);
+                        }
+                        for(std::vector<int>::iterator it = v.label.begin();
+                                it != v.label.end(); it++)
+                        {
+                            tempU.label.push_back(*it);                            
+                        }
+
+                        // replace v in A by (u\{p}) U (v\{q})
+                        tempV.first = u.setMinus(p);
+                        tempV.second = v.setMinus(q);
+                    }
+
+                    // Caso 2
+                    if( (v.first == q) && (u.first == p) )
+                    {
+                        // replace u in A by {p,q}
+                        tempU.first = p;
+                        tempU.label.clear();
+                        tempU.second = q;
+
+                        for(std::vector<int>::iterator it = u.label.begin();
+                                it != u.label.end(); it++)
+                        {
+                            tempU.label.push_back(*it);
+                        }
+                        for(std::vector<int>::iterator it = u.label.begin();
+                                it != u.label.end(); it++)
+                        {
+                            tempU.label.push_back(-(*it));
+                        }
+
+                        // replace v in A by (u\{p}) U (v\{q})
+                        tempV.first = u.setMinus(p);
+                        tempV.second = v.setMinus(q);
+                    }
+
+                    // Caso 3
+                    if( (v.second == q) && (u.second == p) )
+                    {
+                        // replace u in A by {p,q}
+                        tempU.first = p;
+                        tempU.label.clear();
+                        tempU.second = q;
+
+                        for(std::vector<int>::iterator it = u.label.begin();
+                                it != u.label.end(); it++)
+                        {
+                            tempU.label.push_back(-(*it));
+                        }
+                        for(std::vector<int>::iterator it = v.label.begin();
+                                it != v.label.end(); it++)
+                        {
+                            tempU.label.push_back(*it);
+                        }
+
+                        // replace v in A by (u\{p}) U (v\{q})
+                        tempV.first = u.setMinus(p);
+                        tempV.second = v.setMinus(q);
+                    }
+
+                    // Caso 4
+                    if( (v.first == q) && (u.second == p) )
+                    {
+                        // replace u in A by {p,q}
+                        tempU.first = p;
+                        tempU.label.clear();
+                        tempU.second = q;
+
+                        for(std::vector<int>::iterator it = u.label.begin();
+                                it != u.label.end(); it++)
+                        {
+                            tempU.label.push_back(-(*it));
+                        }
+                        for(std::vector<int>::iterator it = v.label.begin();
+                                it != v.label.end(); it++)
+                        {
+                            tempU.label.push_back(-(*it));                            
+                        }
+
+                        // replace v in A by (u\{p}) U (v\{q})
+                        tempV.first = u.setMinus(p);
+                        tempV.second = v.setMinus(q);
+                    }
                 }
-                
-                while(!v.label.empty())
+                else
                 {
-                    tempU.label.push_back(v.label.back());
-                    v.label.pop_back();
+                    // Caso 5
+                    if( (v.second == q) && (u.first == p) )
+                    {
+                        // replace u in A by {p,q}
+                        tempU.first = p;
+                        tempU.label.clear();
+                        tempU.second = q;
+
+                        for(std::vector<int>::iterator it = v.label.begin();
+                                it != v.label.end(); it++)
+                        {
+                            tempU.label.push_back(*it);
+                        }
+                        for(std::vector<int>::iterator it = u.label.begin();
+                                it != u.label.end(); it++)
+                        {
+                            tempV.label.push_back(*it);
+                        }
+
+                        // replace v in A by (u\{p}) U (v\{q})
+                        tempV.first = v.setMinus(q);
+                        tempV.second = u.setMinus(p);
+                    }
+
+                    // Caso 6
+                    if( (v.first == q) && (u.first == p) )
+                    {
+                        // replace u in A by {p,q}
+                        tempU.first = p;
+                        tempU.label.clear();
+                        tempU.second = q;
+
+                        for(std::vector<int>::iterator it = v.label.begin();
+                                it != v.label.end(); it++)
+                        {
+                            tempV.label.push_back(-(*it));                            
+                        }
+                        for(std::vector<int>::iterator it = u.label.begin();
+                                it != u.label.end(); it++)
+                        {
+                            tempV.label.push_back(*it);
+                        }
+
+                        // replace v in A by (u\{p}) U (v\{q})
+                        tempV.first = v.setMinus(q);
+                        tempV.second = u.setMinus(p);
+                    }
+
+                    // Caso 7
+                    if( (v.second == q) && (u.second == p) )
+                    {
+                        // replace u in A by {p,q}
+                        tempU.first = p;
+                        tempU.label.clear();
+                        tempU.second = q;
+
+                        for(std::vector<int>::iterator it = v.label.begin();
+                                it != v.label.end(); it++)
+                        {
+                            tempV.label.push_back(*it);
+                        }
+                        for(std::vector<int>::iterator it = u.label.begin();
+                                it != u.label.end(); it++)
+                        {
+                            tempV.label.push_back(-(*it));                            
+                        }
+
+                        // replace v in A by (u\{p}) U (v\{q})
+                        tempV.first = v.setMinus(q);
+                        tempV.second = u.setMinus(p);
+                    }
+
+                    // Caso 8
+                    if( (v.first == q) && (u.second == p) )
+                    {
+                        // replace u in A by {p,q}
+                        tempU.first = p;
+                        tempU.label.clear();
+                        tempU.second = q;
+
+                        for(std::vector<int>::iterator it = v.label.begin();
+                                it != v.label.end(); it++)
+                        {
+                            tempV.label.push_back(-(*it));                            
+                        }
+                        for(std::vector<int>::iterator it = u.label.begin();
+                                it != u.label.end(); it++)
+                        {
+                            tempV.label.push_back(-(*it));
+                        }
+
+                        // replace v in A by (u\{p}) U (v\{q})
+                        tempV.first = v.setMinus(q);
+                        tempV.second = u.setMinus(p);
+                    }
                 }
 
-                // replace v in A by (u\{p}) U (v\{q})
-                tempV.first = u.setMinus(p);
-                tempV.second = v.setMinus(q);
-
-                // TODO: Verificar caso dos Singletons
                 if (tempV.first == 0)
                 {
-                    if(tempV.second == 0)
+                    if( (tempV.second == 0) && (!tempV.label.empty()) )
                         vacancies.push(idxV);
                     else
                     {
@@ -563,11 +735,6 @@ int AdjacencyGraph::sortByDCJsubst()
                         tempV.second = 0;
                     }
                 }
-
-                std::cout << "Join: " << tempU.first << ","
-                                            << tempU.second << std::endl;
-                std::cout << "Join: " << tempV.first << ","
-                                            << tempV.second << std::endl;
 
                 // Altero a Tabela AdjA:
                 adjA[idxU] = tempU;
@@ -603,9 +770,16 @@ int AdjacencyGraph::sortByDCJsubst()
                     }
                 }
 
-                //print();
+                if(!adjA[idxV].label.empty())
+                {
+                    for(std::vector<int>::iterator it = adjA[idxV].label.begin();
+                            it != adjA[idxV].label.end(); it++)
+                    {
+                        locLabelA[*it].positionLabel = idxV;
+                    }
+                }
+
                 ++dist;
-                std::cout << "Distancia: " << dist << std::endl;
             }
         } // end if adjacency
     }// end for
@@ -616,7 +790,6 @@ int AdjacencyGraph::sortByDCJsubst()
         // if it is a telomere in B
         if (adjB[i].isTelomere())
         {
-
             int idxU, idxV;
             int p = adjB[i].first;
 
@@ -635,31 +808,40 @@ int AdjacencyGraph::sortByDCJsubst()
             // if u is an adjacency
             if(u.isAdjacency())
             {
-                std::cout << "Cut: " << u.first << "," << u.second
-                                                << std::endl;
+                if(!adjB[i].label.empty())
+                {
+                    // replace u in A by {p} ...
+                    tempU.first = p;
+                    tempU.label.clear();
+                    tempU.second = 0;
 
-                // replace u in A by {p} ...
-                tempU.first = p;
-                tempU.second = 0;
+                    for(std::vector<int>::iterator it = u.label.begin();
+                                it != u.label.end(); it++)
+                    {
+                        tempU.label.push_back(*it);
+                    }
 
-                std::cout << "Join: " << tempU.first << ","
-                                            << tempU.second << std::endl;
-
-                // Altero Tabela AdjA:
-                adjA[idxU] = tempU;
-
-                // Altero Tabela LocA:
-                if(tempU.first > 0)
-                    locA[tempU.first].tail = idxU;
+                    // ... and (u\{p})
+                    tempV.first = u.setMinus(p);
+                    tempV.second = 0;
+                }
                 else
-                    locA[-tempU.first].head = idxU;
+                {
+                    // replace u in A by {p} ...
+                    tempU.first = p;
+                    tempU.label.clear();
+                    tempU.second = 0;
 
-                // ... and (u\{p})
-                tempV.first = u.setMinus(p);
-                tempV.second = 0;
+                    for(std::vector<int>::iterator it = u.label.begin();
+                                it != u.label.end(); it++)
+                    {
+                        tempV.label.push_back(*it);                        
+                    }
 
-                std::cout << "Join: " << tempV.first << ","
-                                            << tempV.second << std::endl;
+                    // ... and (u\{p})
+                    tempV.first = u.setMinus(p);
+                    tempV.second = 0;
+                }
 
                 if(vacancies.empty())
                 {
@@ -671,20 +853,160 @@ int AdjacencyGraph::sortByDCJsubst()
                     idxV = vacancies.top();
                     vacancies.pop();
                 }
+
+                // Altero a Tabela AdjA:
+                adjA[idxU] = tempU;
+                adjA[idxV] = tempV;
+
+                // Altero a Tabela LocA:
+                if(adjA[idxU].first > 0)
+                    locA[adjA[idxU].first].tail = idxU;
+                else
+                    locA[-adjA[idxU].first].head = idxU;
+
                 if(adjA[idxU].second > 0)
                     locA[adjA[idxU].second].tail = idxU;
                 else
                     locA[-adjA[idxU].second].head = idxU;
 
+                if(adjA[idxV].first > 0)
+                    locA[adjA[idxV].first].tail = idxV;
+                else
+                    locA[-adjA[idxV].first].head = idxV;
+
+                if(adjA[idxV].second > 0)
+                    locA[adjA[idxV].second].tail = idxV;
+                else
+                    locA[-adjA[idxV].second].head = idxV;
+
+                if(!adjA[idxU].label.empty())
+                {
+                    for(std::vector<int>::iterator it = adjA[idxU].label.begin();
+                            it != adjA[idxU].label.end(); it++)
+                    {
+                        locLabelA[*it].positionLabel = idxU;
+                    }
+                }
+
+                if(!adjA[idxV].label.empty())
+                {
+                    for(std::vector<int>::iterator it = adjA[idxV].label.begin();
+                            it != adjA[idxV].label.end(); it++)
+                    {
+                        locLabelA[*it].positionLabel = idxV;
+                    }
+                }
+
                 ++dist;
 
-                //print();
-
-                std::cout << "Distancia: " << dist << std::endl;
             } // end if u is an adjacency
         } // end if telomere
     }// end for
 
+        // Print:
+    std::cout<< "First: ";
+    for(int i = 1; i <= 7; ++i)
+        std::cout<< adjA[i].first << ",";
+    std::cout<< "\n";
+
+    std::cout<< "Second: ";
+    for(int i = 1; i <= 7; ++i)
+        std::cout<< adjA[i].second << ",";
+    std::cout<< "\n";
+
+    std::cout<< "Labels: ";
+    for(int i = 1; i <= 7; ++i)
+    {
+        std::cout<< adjA[i].label << ",";
+    }
+    std::cout<< "\n";
+
+    std::cout<< "Head: ";
+    for(int i = 1; i <= 7; ++i)
+        std::cout<< locA[i].head << ",";
+
+    std::cout<< "\n";
+
+    std::cout<< "tail: ";
+    for(int i = 1; i <= 7; ++i)
+        std::cout<< locA[i].tail << ",";
+    std::cout<< "\n";
+
+    // DCJs: deletion, insertion and substitution
+    for(int i = 1; adjB[i].first != END_OF_TABLE; ++i)
+    {
+        int idxU;
+        int p = adjB[i].first;
+
+        // let u be the element of genome A that contains p
+        if(p > 0)
+        {
+            idxU = locA[p].tail;
+            u = adjA[idxU];
+        }
+        else
+        {
+            idxU = locA[- p].head;
+            u = adjA[idxU];
+        }
+
+        tempU.first = u.first;
+        tempU.label.clear();
+        tempU.second = u.second;
+
+        if( (!adjB[i].label.empty()) && (!u.label.empty()) )
+        {
+            // Substitution
+            for(std::vector<int>::iterator it = adjB[i].label.begin();
+                    it != adjB[i].label.end(); it++)
+            {
+                tempU.label.push_back(*it);
+            }
+
+            // Altero a Tabela AdjA:
+            adjA[idxU] = tempU;
+
+            // Altero a Tabela LocA:
+            for(std::vector<int>::iterator it = adjA[idxU].label.begin();
+                    it != adjA[idxU].label.end(); it++)
+            {
+                locLabelA[*it].positionLabel = idxU;
+            }
+            ++dist;
+        }
+
+        if( (!adjB[i].label.empty()) && (u.label.empty()) )
+        {
+            // Insertion
+            for(std::vector<int>::iterator it = adjB[i].label.begin();
+                    it != adjB[i].label.end(); it++)
+            {
+                tempU.label.push_back(*it);
+            }
+
+            // Altero a Tabela AdjA:
+            adjA[idxU] = tempU;
+
+            // Altero a Tabela LocA:
+            for(std::vector<int>::iterator it = adjA[idxU].label.begin();
+                    it != adjA[idxU].label.end(); it++)
+            {
+                locLabelA[*it].positionLabel = idxU;
+            }
+            ++dist;
+        }
+
+        if( (adjB[i].label.empty()) && (!u.label.empty()) )
+        {
+            // Deletion
+
+            // Altero a Tabela AdjA:
+            adjA[idxU] = tempU;
+
+            ++dist;
+        }
+    }
+    std::cout << "Distancia: " << dist << std::endl;
     return dist;
 }
 
