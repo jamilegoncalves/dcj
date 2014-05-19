@@ -17,6 +17,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "AdjacencyGraph.h"
+#include "Adjacency.h"
+#include "DoubleCutAndJoin.h"
+#include "Deletion.h"
+#include "Insertion.h"
+#include "Substitution.h"
 #include <stack>
 #include <map>
 #include <math.h>
@@ -47,10 +52,6 @@ AdjacencyGraph::AdjacencyGraph(Genome *a, Genome *b)
     whereThis = genomeB;
     idxEndOfAdjB = constructTables(b, labelsInB, adjB, locB, locLabelB, whereThis)+1;
 
-    sortByDCJsubst();
-
-    //std::cout<< "Distância: "<< DCJsubstDistance(a);
-    //std::cout<< "\n ";
 }
 
 AdjacencyGraph::~AdjacencyGraph()
@@ -72,7 +73,7 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
     int n = g->numGenes();
     int adjacencyTableSize = 3*n + 2;
 
-    adj = new Adjacency[adjacencyTableSize];
+    adj = new Adjacency[adjacencyTableSize]();
     loc = new Location[adjacencyTableSize];
     locLabel = new LocationLabel[adjacencyTableSize];
     int offset = 0;
@@ -175,6 +176,7 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
             {
                 adj[offset+1].first = 0;
                 adj[offset+1].second = 0;
+                adj[offset+1].circularSingleton = true;
 
                 if(whereThis == genomeA)
                     circularSingletonInA.push_back(geneIdx);
@@ -280,17 +282,6 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
 
 }
 
-
-bool Adjacency::isAdjacency()
-{
-    if (first == 0)
-        return false;
-    if(second != 0)
-        return true;
-    else
-        return false;
-}
-
 /**
  * Armazena:
  * Primeiro elemento de cada caminho ímpar na fila: oddpaths
@@ -326,7 +317,6 @@ void AdjacencyGraph::paths()
             }
         }
     }
-
 
     // Para cada telomero do Genoma B
     for(int i=1; adjB[i].first != END_OF_TABLE; ++i)
@@ -485,13 +475,247 @@ int AdjacencyGraph::getLengthFromB(int i, int *idxLast)
     return length;
 }
 
-int AdjacencyGraph::sortByDCJsubst()
+Genome *AdjacencyGraph::adjacencyTableToGenome(Adjacency *adj, Location *loc)
+{
+    Genome *g = new Genome();
+    std::queue< Adjacency > chromosomeRepresentatives;
+
+    for(int i = 1; adj[i].first != END_OF_TABLE; ++i)
+        adj[i].visited = false;
+
+    int idxChr;
+    int idxAdj = 1;
+    bool isLinear;
+
+    for(int i = 1; adj[i].first != END_OF_TABLE; ++i)
+    {
+        if(!adj[i].visited)
+        {
+            idxChr = i;
+            int currentGene = adj[idxChr].first;
+
+            if (currentGene == 0) // if it's a singleton
+            {
+                adj[i].visited = true;
+                if (!adj[i].label.empty())
+                    chromosomeRepresentatives.push(adj[i]);
+                
+                continue;
+            }
+
+            do
+            {
+                adj[idxChr].visited = true;
+
+                int nextGene = adj[idxChr].setMinus(currentGene);
+
+                if (nextGene > 0)
+                    idxChr = loc[nextGene].head;
+                else if (nextGene < 0)
+                    idxChr = loc[-nextGene].tail;
+
+                currentGene = -nextGene;
+            }
+            while( (!adj[idxChr].visited) && (currentGene != 0) );
+
+            chromosomeRepresentatives.push(adj[idxChr]);
+
+            if (currentGene == 0) // se for chr linear
+            {                     // procura o outro telomero
+                idxChr = i;
+                currentGene = adj[idxChr].second;
+                do
+                {
+                    currentGene = adj[idxChr].setMinus(-currentGene);
+
+                    if(currentGene > 0)
+                        idxChr = loc[currentGene].head;
+                    else if(currentGene < 0)
+                        idxChr = loc[-currentGene].tail;
+
+                    adj[idxChr].visited = true;
+                }
+                while (currentGene != 0);
+            }
+        }
+    }
+    
+    std::cout<< "Número de representantes: ";
+    std::cout<<chromosomeRepresentatives.size();
+    std::cout<< "\n";
+
+    while (!chromosomeRepresentatives.empty())
+    {
+        Adjacency rep = chromosomeRepresentatives.front();
+        chromosomeRepresentatives.pop();
+
+        if(rep.first == 0) // If it's a singleton
+        {
+            if(rep.circularSingleton == true) // If it's a linear singleton
+                isLinear = true;
+            if(rep.circularSingleton == false) // If it's a circular singleton
+                isLinear = false;
+        }
+        else // If it's not a singleton
+        {
+            if(rep.second == 0)
+                isLinear = true;
+            else
+                isLinear = false;
+        }
+
+        Chromosome *chr = new Chromosome("chrC", isLinear);
+
+        if(isLinear) // if it's a linear chromosome
+        {
+            if( (rep.first == 0)&&(!rep.label.empty()) ) // If it's a singleton
+            {
+                for(std::vector<int>::iterator it = rep.label.begin();
+                            it != rep.label.end(); it++)
+                {
+                    chr->genes.push_back(*it);
+                }
+            }
+            else // If it's not a singleton
+            {
+                int currentGene = rep.first;
+
+                chr->genes.push_back(currentGene);
+
+                if(!rep.label.empty())
+                {
+                    for(std::vector<int>::iterator it = rep.label.begin();
+                            it != rep.label.end(); it++)
+                    {
+                        chr->genes.push_back(*it);
+                    }
+                }
+
+                // next adjacency
+                if(currentGene > 0)
+                    idxAdj = loc[currentGene].head;
+                else
+                    idxAdj = loc[-currentGene].tail;
+
+                int nextGene = adj[idxAdj].setMinus(-currentGene);
+
+                do{
+                    currentGene = nextGene;
+
+                    if(!adj[idxAdj].label.empty())
+                    {
+                        for(std::vector<int>::iterator it = adj[idxAdj].label.begin();
+                                it != adj[idxAdj].label.end(); it++)
+                        {
+                            chr->genes.push_back(*it);
+                        }
+                    }
+
+                    chr->genes.push_back(currentGene);
+
+                    // next adjacency
+                    if(currentGene > 0)
+                        idxAdj = loc[currentGene].head;
+                    else
+                        idxAdj = loc[-currentGene].tail;
+
+                    nextGene = adj[idxAdj].setMinus(-currentGene);
+
+                }while(nextGene != 0);
+
+            }
+            g->chromosomes.push_back(chr);
+        }
+        else // if it's a circular chromosome
+        {
+            if( (rep.first == 0)&&(!rep.label.empty()) ) // If it's a singleton
+            {
+                for(std::vector<int>::iterator it = rep.label.begin();
+                            it != rep.label.end(); it++)
+                {
+                    chr->genes.push_back(*it);
+                }
+            }
+            else // If it's not a singleton
+            {
+                int currentGene = rep.first;
+
+                if(!rep.label.empty())
+                {
+                    for(std::vector<int>::iterator it = rep.label.begin();
+                            it != rep.label.end(); it++)
+                    {
+                        chr->genes.push_back(*it);
+                    }
+                }
+
+                chr->genes.push_back(currentGene);
+
+                // next adjacency
+                if(currentGene > 0)
+                    idxAdj = loc[currentGene].head;
+                else
+                    idxAdj = loc[-currentGene].tail;
+
+                int nextGene = adj[idxAdj].setMinus(-currentGene);
+
+                do{
+
+                    currentGene = nextGene;
+
+                    if(!adj[idxAdj].label.empty())
+                    {
+                        for(std::vector<int>::iterator it = adj[idxAdj].label.begin();
+                                it != adj[idxAdj].label.end(); it++)
+                        {
+                            chr->genes.push_back(*it);
+                        }
+                    }
+                    
+                    chr->genes.push_back(currentGene);
+
+                    // next adjacency
+                    if(currentGene > 0)
+                        idxAdj = loc[currentGene].head;
+                    else
+                        idxAdj = loc[-currentGene].tail;
+
+                    nextGene = adj[idxAdj].setMinus(-currentGene);
+
+                }while(nextGene != rep.first);
+            }
+            g->chromosomes.push_back(chr);
+        }
+    }
+    return g;
+}
+
+void AdjacencyGraph::printGenome(Genome *g)
+{
+    std::vector<Chromosome*>::iterator cIterator;
+
+    for(cIterator = g->chromosomes.begin();
+            cIterator != g->chromosomes.end(); ++cIterator)
+    {
+        Chromosome *chr = *cIterator;
+        std::cout<< *chr << std::endl;
+    }
+}
+
+int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
+        std::queue< Rearrangement > &dcjs)
 {
     Adjacency u, v, tempU, tempV;
     std::stack<int> vacancies;
 
     int dist = 0;
 
+    // Print
+    Genome *g = adjacencyTableToGenome(adjA, locA);
+    printGenome(g);
+
+    steps.push(g);
+    
     // iterate over all adjacencies of genome B
     for(int i = 1; adjB[i].first != END_OF_TABLE; ++i)
     {
@@ -533,6 +757,11 @@ int AdjacencyGraph::sortByDCJsubst()
                     // Caso 1
                     if( (v.second == q) && (u.first == p) )
                     {
+                        DoubleCutAndJoin dcj;
+
+                        dcj.cut[0] = u;
+                        dcj.cut[1] = v;
+
                         // replace u in A by {p,q}
                         tempU.first = p;
                         tempU.label.clear();
@@ -552,11 +781,22 @@ int AdjacencyGraph::sortByDCJsubst()
                         // replace v in A by (u\{p}) U (v\{q})
                         tempV.first = u.setMinus(p);
                         tempV.second = v.setMinus(q);
+
+                        dcj.join[0] = tempU;
+                        dcj.join[1] = tempV;
+
+                        dcjs.push(dcj);
+
                     }
 
                     // Caso 2
                     if( (v.first == q) && (u.first == p) )
                     {
+                        DoubleCutAndJoin dcj;
+
+                        dcj.cut[0] = u;
+                        dcj.cut[1] = v;
+
                         // replace u in A by {p,q}
                         tempU.first = p;
                         tempU.label.clear();
@@ -576,11 +816,21 @@ int AdjacencyGraph::sortByDCJsubst()
                         // replace v in A by (u\{p}) U (v\{q})
                         tempV.first = u.setMinus(p);
                         tempV.second = v.setMinus(q);
+
+                        dcj.join[0] = tempU;
+                        dcj.join[1] = tempV;
+                        
+                        dcjs.push(dcj);
                     }
 
                     // Caso 3
                     if( (v.second == q) && (u.second == p) )
                     {
+                        DoubleCutAndJoin dcj;
+
+                        dcj.cut[0] = u;
+                        dcj.cut[1] = v;
+
                         // replace u in A by {p,q}
                         tempU.first = p;
                         tempU.label.clear();
@@ -600,11 +850,21 @@ int AdjacencyGraph::sortByDCJsubst()
                         // replace v in A by (u\{p}) U (v\{q})
                         tempV.first = u.setMinus(p);
                         tempV.second = v.setMinus(q);
+
+                        dcj.join[0] = tempU;
+                        dcj.join[1] = tempV;
+                        
+                        dcjs.push(dcj);
                     }
 
                     // Caso 4
                     if( (v.first == q) && (u.second == p) )
                     {
+                        DoubleCutAndJoin dcj;
+
+                        dcj.cut[0] = u;
+                        dcj.cut[1] = v;
+
                         // replace u in A by {p,q}
                         tempU.first = p;
                         tempU.label.clear();
@@ -624,6 +884,11 @@ int AdjacencyGraph::sortByDCJsubst()
                         // replace v in A by (u\{p}) U (v\{q})
                         tempV.first = u.setMinus(p);
                         tempV.second = v.setMinus(q);
+
+                        dcj.join[0] = tempU;
+                        dcj.join[1] = tempV;
+
+                        dcjs.push(dcj);
                     }
                 }
                 else
@@ -631,6 +896,11 @@ int AdjacencyGraph::sortByDCJsubst()
                     // Caso 5
                     if( (v.second == q) && (u.first == p) )
                     {
+                        DoubleCutAndJoin dcj;
+
+                        dcj.cut[0] = u;
+                        dcj.cut[1] = v;
+
                         // replace u in A by {p,q}
                         tempU.first = p;
                         tempU.label.clear();
@@ -650,11 +920,21 @@ int AdjacencyGraph::sortByDCJsubst()
                         // replace v in A by (u\{p}) U (v\{q})
                         tempV.first = v.setMinus(q);
                         tempV.second = u.setMinus(p);
+
+                        dcj.join[0] = tempU;
+                        dcj.join[1] = tempV;
+
+                        dcjs.push(dcj);
                     }
 
                     // Caso 6
                     if( (v.first == q) && (u.first == p) )
                     {
+                        DoubleCutAndJoin dcj;
+
+                        dcj.cut[0] = u;
+                        dcj.cut[1] = v;
+
                         // replace u in A by {p,q}
                         tempU.first = p;
                         tempU.label.clear();
@@ -674,11 +954,21 @@ int AdjacencyGraph::sortByDCJsubst()
                         // replace v in A by (u\{p}) U (v\{q})
                         tempV.first = v.setMinus(q);
                         tempV.second = u.setMinus(p);
+                        
+                        dcj.join[0] = tempU;
+                        dcj.join[1] = tempV;
+                        
+                        dcjs.push(dcj);
                     }
 
                     // Caso 7
                     if( (v.second == q) && (u.second == p) )
                     {
+                        DoubleCutAndJoin dcj;
+
+                        dcj.cut[0] = u;
+                        dcj.cut[1] = v;
+
                         // replace u in A by {p,q}
                         tempU.first = p;
                         tempU.label.clear();
@@ -698,11 +988,21 @@ int AdjacencyGraph::sortByDCJsubst()
                         // replace v in A by (u\{p}) U (v\{q})
                         tempV.first = v.setMinus(q);
                         tempV.second = u.setMinus(p);
+
+                        dcj.join[0] = tempU;
+                        dcj.join[1] = tempV;
+
+                        dcjs.push(dcj);
                     }
 
                     // Caso 8
                     if( (v.first == q) && (u.second == p) )
                     {
+                        DoubleCutAndJoin dcj;
+
+                        dcj.cut[0] = u;
+                        dcj.cut[1] = v;
+
                         // replace u in A by {p,q}
                         tempU.first = p;
                         tempU.label.clear();
@@ -722,6 +1022,11 @@ int AdjacencyGraph::sortByDCJsubst()
                         // replace v in A by (u\{p}) U (v\{q})
                         tempV.first = v.setMinus(q);
                         tempV.second = u.setMinus(p);
+
+                        dcj.join[0] = tempU;
+                        dcj.join[1] = tempV;
+
+                        dcjs.push(dcj);
                     }
                 }
 
@@ -779,6 +1084,12 @@ int AdjacencyGraph::sortByDCJsubst()
                     }
                 }
 
+                // Print
+                Genome *g = adjacencyTableToGenome(adjA, locA);
+                printGenome(g);
+
+                steps.push(g);
+
                 ++dist;
             }
         } // end if adjacency
@@ -810,6 +1121,11 @@ int AdjacencyGraph::sortByDCJsubst()
             {
                 if(!adjB[i].label.empty())
                 {
+                    DoubleCutAndJoin dcj;
+
+                    dcj.cut[0] = u;
+                    dcj.cut[1] = v;
+
                     // replace u in A by {p} ...
                     tempU.first = p;
                     tempU.label.clear();
@@ -824,9 +1140,19 @@ int AdjacencyGraph::sortByDCJsubst()
                     // ... and (u\{p})
                     tempV.first = u.setMinus(p);
                     tempV.second = 0;
+
+                    dcj.join[0] = tempU;
+                    dcj.join[1] = tempV;
+
+                    dcjs.push(dcj);
                 }
                 else
                 {
+                    DoubleCutAndJoin dcj;
+
+                    dcj.cut[0] = u;
+                    dcj.cut[1] = v;
+
                     // replace u in A by {p} ...
                     tempU.first = p;
                     tempU.label.clear();
@@ -841,6 +1167,11 @@ int AdjacencyGraph::sortByDCJsubst()
                     // ... and (u\{p})
                     tempV.first = u.setMinus(p);
                     tempV.second = 0;
+
+                    dcj.join[0] = tempU;
+                    dcj.join[1] = tempV;
+
+                    dcjs.push(dcj);
                 }
 
                 if(vacancies.empty())
@@ -897,12 +1228,18 @@ int AdjacencyGraph::sortByDCJsubst()
                     }
                 }
 
+                // Print
+                Genome *g = adjacencyTableToGenome(adjA, locA);
+                printGenome(g);
+
+                steps.push(g);
+
                 ++dist;
 
             } // end if u is an adjacency
         } // end if telomere
     }// end for
-
+/*
         // Print:
     std::cout<< "First: ";
     for(int i = 1; i <= 7; ++i)
@@ -931,8 +1268,9 @@ int AdjacencyGraph::sortByDCJsubst()
     for(int i = 1; i <= 7; ++i)
         std::cout<< locA[i].tail << ",";
     std::cout<< "\n";
+*/
 
-    // DCJs: deletion, insertion and substitution
+    // deletion, insertion and substitution
     for(int i = 1; adjB[i].first != END_OF_TABLE; ++i)
     {
         int idxU;
@@ -957,9 +1295,14 @@ int AdjacencyGraph::sortByDCJsubst()
         if( (!adjB[i].label.empty()) && (!u.label.empty()) )
         {
             // Substitution
+            Substitution subst;
+
+            subst.adj = u;
+
             for(std::vector<int>::iterator it = adjB[i].label.begin();
                     it != adjB[i].label.end(); it++)
             {
+                subst.label.push_back(*it);
                 tempU.label.push_back(*it);
             }
 
@@ -972,15 +1315,29 @@ int AdjacencyGraph::sortByDCJsubst()
             {
                 locLabelA[*it].positionLabel = idxU;
             }
+
+            // Print
+            Genome *g = adjacencyTableToGenome(adjA, locA);
+            printGenome(g);
+
+            steps.push(g);
+
+            dcjs.push(subst);
+
             ++dist;
         }
 
         if( (!adjB[i].label.empty()) && (u.label.empty()) )
         {
             // Insertion
+            Insertion ins;
+
+            ins.adj = u;
+
             for(std::vector<int>::iterator it = adjB[i].label.begin();
                     it != adjB[i].label.end(); it++)
             {
+                ins.label.push_back(*it);
                 tempU.label.push_back(*it);
             }
 
@@ -993,27 +1350,41 @@ int AdjacencyGraph::sortByDCJsubst()
             {
                 locLabelA[*it].positionLabel = idxU;
             }
+
+            // Print
+            Genome *g = adjacencyTableToGenome(adjA, locA);
+            printGenome(g);
+
+            steps.push(g);
+
+            dcjs.push(ins);
+
             ++dist;
         }
 
         if( (adjB[i].label.empty()) && (!u.label.empty()) )
         {
             // Deletion
+            Deletion del;
+
+            del.adj = u;
 
             // Altero a Tabela AdjA:
             adjA[idxU] = tempU;
+
+            // Print
+            Genome *g = adjacencyTableToGenome(adjA, locA);
+            printGenome(g);
+
+            steps.push(g);
+
+            dcjs.push(del);
 
             ++dist;
         }
     }
     std::cout << "Distancia: " << dist << std::endl;
     return dist;
-}
-
-bool Adjacency::equals(Adjacency &a)
-{
-    return((first == a.first)&&(second==a.second)
-                            || (first==a.second)&&(second==a.first));
 }
 
 int AdjacencyGraph::DCJsubstDistance(Genome *a)
@@ -1805,18 +2176,6 @@ int AdjacencyGraph::substPotentialInPaths(std::deque<Path> paths,
     return substPTotal;
 }
 
-bool Adjacency::isTelomere()
-{
-    if (first == 0)
-        return false;
-    if(second == 0)
-        return true;
-    else
-        return false;
-}
-
-
-
 void AdjacencyGraph::findLabels(Genome *a, Genome *b)
 {
     labels.clear();
@@ -1918,13 +2277,6 @@ bool Adjacency::equals(Adjacency &a)
                             || (first==a.second)&&(second==a.first));
 }
 */
-int Adjacency::setMinus(int x)
-{
-    if(first == x)
-        return second;
-    else
-        return first;
-}
 
 std::ostream & operator<<(std::ostream &os, const std::vector<int> &l) {
     std::vector<int>::const_iterator _it = l.begin();
@@ -1939,3 +2291,4 @@ std::ostream & operator<<(std::ostream &os, const std::vector<int> &l) {
     os << ">";
     return os;
 }
+

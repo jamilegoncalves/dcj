@@ -27,6 +27,10 @@ Genome::Genome(std::string name)
 }
 */
 
+Genome::Genome() {
+}
+
+
 Genome::Genome(std::string name, std::string description)
 {
     this->name = name;

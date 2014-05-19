@@ -18,6 +18,8 @@
  */
 #ifndef ADJACENCYGRAPH_H
 #define ADJACENCYGRAPH_H
+#include "Adjacency.h"
+#include "DoubleCutAndJoin.h"
 #include "Genome.h"
 #include <iostream>
 #include <limits.h>
@@ -28,24 +30,6 @@
 #include <set>
 
 #define END_OF_TABLE INT_MAX
-
-class Adjacency
-{
-public:
-    int first;
-    int second;
-    std::vector <int> label;
-    bool visited;
-
-    bool isAdjacency();
-    bool isTelomere();
-    bool equals(Adjacency &a);
-
-    /* returns this \ {x}  */
-    int setMinus(int x);
-private:
-    bool circularSingleton;
-};
 
 typedef enum{undef, genomeA, genomeB} WhichGenome;
 
@@ -80,6 +64,10 @@ class AdjacencyGraph
     public:
     AdjacencyGraph(Genome *a, Genome *b);
     ~AdjacencyGraph();
+    int sortByDCJsubst(std::queue<Genome *> &steps,
+        std::queue< Rearrangement > &dcjs);
+
+    int DCJsubstDistance(Genome *a);
 
     private:
 
@@ -139,9 +127,9 @@ class AdjacencyGraph
 
     int totalAdjacencies(Genome *g, std::set<int> *labels);
 
-    int sortByDCJsubst();
+    Genome *adjacencyTableToGenome(Adjacency *adj, Location *loc);
 
-    int DCJsubstDistance(Genome *a);
+    void printGenome(Genome *g);
 
     Genome *a;
     Genome *b;

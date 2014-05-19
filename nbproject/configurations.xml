@@ -1,19 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="39">
+<configurationDescriptor version="69">
   <logicalFolder name="root" displayName="root" projectFiles="true">
     <logicalFolder name="HeaderFiles"
                    displayName="Arquivos de cabeçalho"
                    projectFiles="true">
+      <itemPath>Adjacency.h</itemPath>
       <itemPath>AdjacencyGraph.h</itemPath>
       <itemPath>Chromosome.h</itemPath>
+      <itemPath>Deletion.h</itemPath>
+      <itemPath>DoubleCutAndJoin.h</itemPath>
       <itemPath>Genome.h</itemPath>
+      <itemPath>Insertion.h</itemPath>
+      <itemPath>Rearrangement.h</itemPath>
+      <itemPath>Substitution.h</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Arquivos de código-fonte"
                    projectFiles="true">
+      <itemPath>Adjacency.cc</itemPath>
       <itemPath>AdjacencyGraph.cc</itemPath>
       <itemPath>Chromosome.cc</itemPath>
+      <itemPath>Deletion.cc</itemPath>
+      <itemPath>DoubleCutAndJoin.cc</itemPath>
       <itemPath>Genome.cc</itemPath>
+      <itemPath>Insertion.cc</itemPath>
+      <itemPath>Substitution.cc</itemPath>
       <itemPath>main.cc</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
@@ -30,84 +41,30 @@
   <confs>
     <conf name="Debug" type="1">
       <toolsSet>
-        <compilerSet>GNU</compilerSet>
-        <cRequired>true</cRequired>
-        <cppRequired>true</cppRequired>
-        <fortranRequired>false</fortranRequired>
+        <developmentServer>localhost</developmentServer>
+        <compilerSet>GNU|GNU</compilerSet>
         <platform>2</platform>
       </toolsSet>
       <compileType>
-        <linkerTool>
-          <linkerLibItems>
-          </linkerLibItems>
-        </linkerTool>
       </compileType>
-      <item path="AdjacencyGraph.cc">
-        <itemTool>1</itemTool>
-      </item>
-      <item path="AdjacencyGraph.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="Chromosome.cc">
-        <itemTool>1</itemTool>
-      </item>
-      <item path="Chromosome.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="Genome.cc">
-        <itemTool>1</itemTool>
-      </item>
-      <item path="Genome.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="main.cc">
-        <itemTool>1</itemTool>
-      </item>
     </conf>
     <conf name="Release" type="1">
       <toolsSet>
-        <compilerSet>GNU</compilerSet>
-        <cRequired>true</cRequired>
-        <cppRequired>true</cppRequired>
-        <fortranRequired>false</fortranRequired>
+        <developmentServer>localhost</developmentServer>
+        <compilerSet>GNU|GNU</compilerSet>
         <platform>2</platform>
       </toolsSet>
       <compileType>
-        <cCompilerTool>
+        <cTool>
           <developmentMode>5</developmentMode>
-        </cCompilerTool>
-        <ccCompilerTool>
+        </cTool>
+        <ccTool>
           <developmentMode>5</developmentMode>
-        </ccCompilerTool>
+        </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>
         </fortranCompilerTool>
-        <linkerTool>
-          <linkerLibItems>
-          </linkerLibItems>
-        </linkerTool>
       </compileType>
-      <item path="AdjacencyGraph.cc">
-        <itemTool>1</itemTool>
-      </item>
-      <item path="AdjacencyGraph.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="Chromosome.cc">
-        <itemTool>1</itemTool>
-      </item>
-      <item path="Chromosome.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="Genome.cc">
-        <itemTool>1</itemTool>
-      </item>
-      <item path="Genome.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="main.cc">
-        <itemTool>1</itemTool>
-      </item>
     </conf>
   </confs>
 </configurationDescriptor>
