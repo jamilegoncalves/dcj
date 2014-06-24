@@ -9,16 +9,16 @@ CND_DISTDIR=dist
 # Debug configuration
 CND_PLATFORM_Debug=GNU-Linux-x86
 CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-Linux-x86
-CND_ARTIFACT_NAME_Debug=dcjsubst
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux-x86/dcjsubst
+CND_ARTIFACT_NAME_Debug=dcj-subst
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux-x86/dcj-subst
 CND_PACKAGE_DIR_Debug=dist/Debug/GNU-Linux-x86/package
-CND_PACKAGE_NAME_Debug=dcjsubst.tar
-CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux-x86/package/dcjsubst.tar
+CND_PACKAGE_NAME_Debug=dcj-subst.tar
+CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux-x86/package/dcj-subst.tar
 # Release configuration
 CND_PLATFORM_Release=GNU-Linux-x86
 CND_ARTIFACT_DIR_Release=dist/Release/GNU-Linux-x86
-CND_ARTIFACT_NAME_Release=dcjsubst
-CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux-x86/dcjsubst
+CND_ARTIFACT_NAME_Release=dcj-subst
+CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux-x86/dcj-subst
 CND_PACKAGE_DIR_Release=dist/Release/GNU-Linux-x86/package
-CND_PACKAGE_NAME_Release=dcjsubst.tar
-CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux-x86/package/dcjsubst.tar
+CND_PACKAGE_NAME_Release=dcj-subst.tar
+CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux-x86/package/dcj-subst.tar
