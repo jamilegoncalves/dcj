@@ -61,6 +61,29 @@ AdjacencyGraph::~AdjacencyGraph()
     if (labelsInB != NULL) delete labelsInB;
 }
 
+int AdjacencyGraph::maxGene(Genome *g)
+{
+    int max = -1;
+
+    std::vector<Chromosome*>::iterator it;
+    int k = 0;
+
+    for(it = g->chromosomes.begin(); it != g->chromosomes.end(); ++it)
+    {
+        Chromosome *chr = *it;
+
+        std::vector<int>::iterator itGene;
+
+        for(itGene = chr->genes.begin(); itGene != chr->genes.end(); ++itGene)
+        {
+            if(abs(*itGene) > max)
+                max = abs(*itGene);
+        }
+    }
+    
+    return max;
+}
+
 /**
  * Constroi tabelas: Adjacency e Location.
  * @returns Número de adjacências
@@ -73,14 +96,16 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
     int n = g->numGenes();
     int adjacencyTableSize = 3*n + 2;
 
+    int maxG = maxGene(g);
+
     adj = new Adjacency[adjacencyTableSize]();
-    loc = new Location[adjacencyTableSize];
-    locLabel = new LocationLabel[adjacencyTableSize];
+    loc = new Location[maxG+1];
+    locLabel = new LocationLabel[maxG+1];
     int offset = 0;
     int numAdj = totalAdjacencies(g, labels);
 
-    memset(locLabel, 0, adjacencyTableSize*sizeof(LocationLabel));
-    memset(loc, 0, adjacencyTableSize*sizeof(Location));
+    memset(locLabel, 0, (maxG+1)*sizeof(LocationLabel));
+    memset(loc, 0, (maxG+1)*sizeof(Location));
 
     std::vector<Chromosome*>::iterator cIterator;
 
@@ -232,7 +257,7 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
                 for(std::vector<int>::iterator it = adj[i].label.begin();
                         it != adj[i].label.end(); it++)
                 {
-                    locLabel[*it].positionLabel = i;
+                    locLabel[abs(*it)].positionLabel = i; // Falha de Segmentação
                 }
             }
         }
@@ -241,31 +266,31 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
 
     // Print
     std::cout<< "First: ";
-    for(int i = 1; i <= 7; ++i)
+    for(int i = 1; adj[i].first != END_OF_TABLE; ++i)
         std::cout<< adj[i].first << ",";
     std::cout<< "\n";
 
 
     std::cout<< "Second: ";
-    for(int i = 1; i <= 7; ++i)
+    for(int i = 1; adj[i].first != END_OF_TABLE; ++i)
         std::cout<< adj[i].second << ",";
     std::cout<< "\n";
 
     std::cout<< "Labels: ";
-    for(int i = 1; i <= 7; ++i)
+    for(int i = 1; adj[i].first != END_OF_TABLE; ++i)
     {
         std::cout<< adj[i].label << ",";
     }
     std::cout<< "\n";
-
+/*
     std::cout<< "Head: ";
-    for(int i = 1; i <= 7; ++i)
+    for(int i = 1; i <= 90; ++i)
         std::cout<< loc[i].head << ",";
 
     std::cout<< "\n";
 
     std::cout<< "tail: ";
-    for(int i = 1; i <= 7; ++i)
+    for(int i = 1; i <= 90; ++i)
         std::cout<< loc[i].tail << ",";
     std::cout<< "\n";
 /*
@@ -277,6 +302,7 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
             std::cout << locLabel[i].positionLabel << ",";
     }
 */
+
     std::cout<< "\n";
     std::cout<< "\n";
 
@@ -311,7 +337,7 @@ void AdjacencyGraph::paths()
                 evenPathsFromA.push_back(path);
             else {
                 if(length == 1)
-                    adjacencies.push_back(path);
+                    pathsLength1.push_back(path);
                 else
                     oddPaths.push_back(path);
             }
@@ -712,7 +738,7 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
 
     // Print
     Genome *g = adjacencyTableToGenome(adjA, locA);
-    printGenome(g);
+    //printGenome(g);
 
     steps.push(g);
     
@@ -785,6 +811,8 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
                         dcj.join[0] = tempU;
                         dcj.join[1] = tempV;
 
+                        dcj.print(std::cerr);
+
                         dcjs.push(dcj);
 
                     }
@@ -819,7 +847,9 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
 
                         dcj.join[0] = tempU;
                         dcj.join[1] = tempV;
-                        
+
+                        dcj.print(std::cerr);
+
                         dcjs.push(dcj);
                     }
 
@@ -853,7 +883,9 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
 
                         dcj.join[0] = tempU;
                         dcj.join[1] = tempV;
-                        
+
+                        dcj.print(std::cerr);
+
                         dcjs.push(dcj);
                     }
 
@@ -887,6 +919,8 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
 
                         dcj.join[0] = tempU;
                         dcj.join[1] = tempV;
+
+                        dcj.print(std::cerr);
 
                         dcjs.push(dcj);
                     }
@@ -924,6 +958,8 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
                         dcj.join[0] = tempU;
                         dcj.join[1] = tempV;
 
+                        dcj.print(std::cerr);
+
                         dcjs.push(dcj);
                     }
 
@@ -957,7 +993,9 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
                         
                         dcj.join[0] = tempU;
                         dcj.join[1] = tempV;
-                        
+
+                        dcj.print(std::cerr);
+
                         dcjs.push(dcj);
                     }
 
@@ -992,6 +1030,8 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
                         dcj.join[0] = tempU;
                         dcj.join[1] = tempV;
 
+                        dcj.print(std::cerr);
+
                         dcjs.push(dcj);
                     }
 
@@ -1025,6 +1065,8 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
 
                         dcj.join[0] = tempU;
                         dcj.join[1] = tempV;
+
+                        dcj.print(std::cerr);
 
                         dcjs.push(dcj);
                     }
@@ -1071,7 +1113,7 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
                     for(std::vector<int>::iterator it = adjA[idxU].label.begin();
                             it != adjA[idxU].label.end(); it++)
                     {
-                        locLabelA[*it].positionLabel = idxU;
+                        locLabelA[abs(*it)].positionLabel = idxU;
                     }
                 }
 
@@ -1080,13 +1122,13 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
                     for(std::vector<int>::iterator it = adjA[idxV].label.begin();
                             it != adjA[idxV].label.end(); it++)
                     {
-                        locLabelA[*it].positionLabel = idxV;
+                        locLabelA[abs(*it)].positionLabel = idxV;
                     }
                 }
 
-                // Print
+                // Print Genome
                 Genome *g = adjacencyTableToGenome(adjA, locA);
-                printGenome(g);
+                //printGenome(g);
 
                 steps.push(g);
 
@@ -1215,7 +1257,7 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
                     for(std::vector<int>::iterator it = adjA[idxU].label.begin();
                             it != adjA[idxU].label.end(); it++)
                     {
-                        locLabelA[*it].positionLabel = idxU;
+                        locLabelA[abs(*it)].positionLabel = idxU;
                     }
                 }
 
@@ -1224,13 +1266,13 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
                     for(std::vector<int>::iterator it = adjA[idxV].label.begin();
                             it != adjA[idxV].label.end(); it++)
                     {
-                        locLabelA[*it].positionLabel = idxV;
+                        locLabelA[abs(*it)].positionLabel = idxV;
                     }
                 }
 
                 // Print
                 Genome *g = adjacencyTableToGenome(adjA, locA);
-                printGenome(g);
+                //printGenome(g);
 
                 steps.push(g);
 
@@ -1239,36 +1281,6 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
             } // end if u is an adjacency
         } // end if telomere
     }// end for
-/*
-        // Print:
-    std::cout<< "First: ";
-    for(int i = 1; i <= 7; ++i)
-        std::cout<< adjA[i].first << ",";
-    std::cout<< "\n";
-
-    std::cout<< "Second: ";
-    for(int i = 1; i <= 7; ++i)
-        std::cout<< adjA[i].second << ",";
-    std::cout<< "\n";
-
-    std::cout<< "Labels: ";
-    for(int i = 1; i <= 7; ++i)
-    {
-        std::cout<< adjA[i].label << ",";
-    }
-    std::cout<< "\n";
-
-    std::cout<< "Head: ";
-    for(int i = 1; i <= 7; ++i)
-        std::cout<< locA[i].head << ",";
-
-    std::cout<< "\n";
-
-    std::cout<< "tail: ";
-    for(int i = 1; i <= 7; ++i)
-        std::cout<< locA[i].tail << ",";
-    std::cout<< "\n";
-*/
 
     // deletion, insertion and substitution
     for(int i = 1; adjB[i].first != END_OF_TABLE; ++i)
@@ -1313,12 +1325,15 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
             for(std::vector<int>::iterator it = adjA[idxU].label.begin();
                     it != adjA[idxU].label.end(); it++)
             {
-                locLabelA[*it].positionLabel = idxU;
+                locLabelA[abs(*it)].positionLabel = idxU;
             }
 
             // Print
+
+            subst.print(std::cerr);
+
             Genome *g = adjacencyTableToGenome(adjA, locA);
-            printGenome(g);
+            //printGenome(g);
 
             steps.push(g);
 
@@ -1348,12 +1363,15 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
             for(std::vector<int>::iterator it = adjA[idxU].label.begin();
                     it != adjA[idxU].label.end(); it++)
             {
-                locLabelA[*it].positionLabel = idxU;
+                locLabelA[abs(*it)].positionLabel = idxU;
             }
 
             // Print
+
+            ins.print(std::cerr);
+
             Genome *g = adjacencyTableToGenome(adjA, locA);
-            printGenome(g);
+            //printGenome(g);
 
             steps.push(g);
 
@@ -1373,8 +1391,11 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
             adjA[idxU] = tempU;
 
             // Print
+
+            del.print(std::cerr);
+
             Genome *g = adjacencyTableToGenome(adjA, locA);
-            printGenome(g);
+            //printGenome(g);
 
             steps.push(g);
 
@@ -1394,7 +1415,7 @@ int AdjacencyGraph::DCJsubstDistance(Genome *a)
     int g = a->numGenes() - numLabels;
     int pL = std::min( linearSingletonInA.size(), linearSingletonInB.size() );
     int pC = std::min( circularSingletonInA.size(), circularSingletonInB.size() );
-    int b = oddPaths.size() + adjacencies.size();
+    int b = oddPaths.size() + pathsLength1.size();
     int c = cycles.size();
     int pathTable[128] = { 0 };
     int sigma = substPotential(pathTable);
@@ -1407,6 +1428,19 @@ int AdjacencyGraph::DCJsubstDistance(Genome *a)
     int z = getZ(pathTable);
 
     int d = g - c - (b/2) + sigma - pL - pC - 2*u - 3*v - 2*w - x - 2*y - z;
+
+    std::cout<< "g: " << g << std::endl;
+    std::cout<< "c: " << c << std::endl;
+    std::cout<< "b: " << b << std::endl;
+    std::cout<< "sigma: " << sigma << std::endl;
+    std::cout<< "pL: " << pL << std::endl;
+    std::cout<< "pC: " << pC << std::endl;
+    std::cout<< "u: " << u << std::endl;
+    std::cout<< "v: " << v << std::endl;
+    std::cout<< "w: " << w << std::endl;
+    std::cout<< "x: " << x << std::endl;
+    std::cout<< "y: " << y << std::endl;
+    std::cout<< "z: " << z << std::endl;
 
     return d;
 }
@@ -1427,6 +1461,11 @@ int AdjacencyGraph::substPotential(int pathTable[128])
     int odd = substPotentialInPaths(oddPaths, oddPath, pathTable, &count);
     int evenFromA = substPotentialInPaths(evenPathsFromA, evenPath, pathTable, &count);
     int evenFromB = substPotentialInPaths(evenPathsFromB, evenPath, pathTable, &count);
+
+    std::cout << "potencial dos ciclos: " << c << std::endl;
+    std::cout << "potencial dos caminhos ímpares: " << odd << std::endl;
+    std::cout << "potencial dos caminhos pares começando em A: " << evenFromA << std::endl;
+    std::cout << "potencial dos caminhos pares começando em B: " << evenFromB << std::endl;
 
     int substPotential = c + odd + evenFromA + evenFromB;
 
@@ -1918,101 +1957,65 @@ std::ostream &AdjacencyGraph::printPath(byte representation,
       return os;
   }
 
+/**
+ * Encontra o índice de uma extremidade de gene na tabela de adjacência,
+ * dados o gene e a tabela de localização correspondente.
+ */
+int find(int geneEnd, Location *locTable) {
+        if(geneEnd > 0)
+            return locTable[geneEnd].tail;
+        else if(geneEnd < 0)
+            return locTable[-geneEnd].head;
+}
+
 /*
  * Determinar o número de runs nos ciclos
  */
-
 int AdjacencyGraph::substPotentialInCycles(std::deque< std::pair<WhichGenome,int> > cycle)
 {
-    WhichGenome lastLabelIn = undef;
-    WhichGenome whereThis = undef;
-
-    int aRuns, bRuns, numRuns;
-    int i, idx, temp;
-    int first; // Condição de parada do ciclo
-
-    Adjacency *adjTable;
-    Location *locTable;
-
     int substPTotal = 0; // Somatório de potenciais de substituição
-    int substP; // potencial de substituição da componente c
 
     std::deque< std::pair<WhichGenome,int> >::iterator it;
 
     for(it = cycle.begin(); it != cycle.end(); it++)
     {
-        aRuns = 0;
-        bRuns = 0;
-        numRuns = 0;
+        int numRuns = 0;
         std::pair<WhichGenome,int> p = *it;
 
-        i = p.second;
+        WhichGenome firstGenome = p.first, genome = p.first;
+        int firstGene = p.second, gene = p.second;
 
-        if(p.first == genomeA)
-        {
-            whereThis = genomeA;
+        WhichGenome lastLabelIn = undef;
+
+        do {
+          Adjacency *adjTable;
+
+          int idx;
+          if (genome == genomeA) {
             adjTable = adjA;
-            locTable = locA;
-        }
-        else if(p.first == genomeB)
-        {
-            whereThis = genomeB;
+            idx = find(gene, locA);
+          } else {
             adjTable = adjB;
-            locTable = locB;
+            idx = find(gene, locB);
+          }
+
+          if (!adjTable[idx].label.empty() && lastLabelIn != genome) {
+            ++numRuns;
+            lastLabelIn = genome;
+          }
+          if (genome == genomeA) {
+            genome = genomeB;
+          } else {
+            genome = genomeA;
+          }
+          gene = adjTable[idx].setMinus(gene);
+        } while(gene != firstGene || genome != firstGenome);
+
+        if (numRuns > 1 && ((numRuns % 2) == 1)) {
+          --numRuns;
         }
 
-        if(i > 0)
-            idx = locTable[i].tail;
-        else if(i < 0)
-            idx = locTable[-i].head;
-
-        first = adjTable[idx].setMinus(i);
-
-        for(;;)
-        {
-            // A adjacencia possui label?
-            if(!adjTable[idx].label.empty())
-            {
-                if(lastLabelIn != whereThis)
-                {
-                    if(whereThis == genomeA)
-                        ++aRuns;
-                    if(whereThis == genomeB)
-                        ++bRuns;
-                }
-                lastLabelIn = whereThis;
-            }
-
-            // Condição de parada
-            if(i == first)
-                break;
-
-            // Atualizando a adjacencia
-            if(whereThis == genomeA)
-            {
-                whereThis = genomeB;
-                adjTable = adjB;
-                locTable = locB;
-            }
-            else if(whereThis == genomeB)
-            {
-                whereThis = genomeA;
-                adjTable = adjA;
-                locTable = locA;
-            }
-
-            if(i > 0)
-                idx = locTable[i].tail;
-            else if(i < 0)
-                idx = locTable[-i].head;
-
-            temp = i;
-
-            i = adjTable[idx].setMinus(temp);
-        }
-
-        numRuns = aRuns + bRuns;
-
+        int substP; // potencial de substituição da componente c
         if(numRuns >= 1)
             substP = ceil((numRuns+1.0)/4.0);
         else

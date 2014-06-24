@@ -24,6 +24,7 @@
       <itemPath>DoubleCutAndJoin.cc</itemPath>
       <itemPath>Genome.cc</itemPath>
       <itemPath>Insertion.cc</itemPath>
+      <itemPath>Rearrangement.cc</itemPath>
       <itemPath>Substitution.cc</itemPath>
       <itemPath>main.cc</itemPath>
     </logicalFolder>

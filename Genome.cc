@@ -95,7 +95,7 @@ Genome::Genome(std::string name, std::string description)
     if (!q.empty()) {
         throw (const char *)"Genome syntax error!";
     }
-
+/*
     // Print
     std::vector<Chromosome*>::iterator cIterator;
     
@@ -106,6 +106,7 @@ Genome::Genome(std::string name, std::string description)
     std::cout<< *chr << std::endl;
 
     }
+ */
 }
 
 /**

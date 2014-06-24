@@ -79,7 +79,9 @@ class AdjacencyGraph
 
     
     std::deque< std::pair<WhichGenome,int> > cycles;
-    std::deque<Path> oddPaths,evenPathsFromA, evenPathsFromB, adjacencies;
+    std::deque<Path> oddPaths,evenPathsFromA, evenPathsFromB, pathsLength1;
+
+    int maxGene(Genome *g);
 
     /**
      * Constroi tabelas: Adjacency e Location.
