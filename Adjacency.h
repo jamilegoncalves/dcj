@@ -16,6 +16,9 @@ public:
     int first;
     int second;
     std::vector <int> label;
+    std::pair<int,int> labelAdjWithFirst;
+    std::pair<int,int> labelAdjWithSecond;
+
     bool visited;
     bool circularSingleton;
 

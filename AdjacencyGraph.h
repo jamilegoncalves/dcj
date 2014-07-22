@@ -67,13 +67,18 @@ class AdjacencyGraph
     int sortByDCJsubst(std::queue<Genome *> &steps,
         std::queue< Rearrangement > &dcjs);
 
+    void newAdjacency(int label, int idxAdj);
+
     int DCJsubstDistance(Genome *a);
 
     private:
 
     Adjacency *adjA, *adjB;
+    int adjAsize, adjBsize;
     Location *locA, *locB;
+    int locAsize, locBsize;
     LocationLabel *locLabelA, *locLabelB;
+    int locLabelAsize, locLabelBsize;
     int idxEndOfAdjA, idxEndOfAdjB;
     int numLabels;
 
@@ -88,7 +93,9 @@ class AdjacencyGraph
      * @returns Número de adjacências
      */
     int constructTables(Genome *g,  std::set<int> *labels, Adjacency *&adj,
-            Location *&loc, LocationLabel *&locLabel,  WhichGenome whereThis);
+                        int &adjSize, Location *&loc, int &locSize,
+                        LocationLabel *&locLabel, int &locLabelSize,
+                        WhichGenome whereThis);
 
     /**
      * Armazena:

@@ -48,10 +48,11 @@ AdjacencyGraph::AdjacencyGraph(Genome *a, Genome *b)
     findLabels(a, b);
 
     whereThis = genomeA;
-    idxEndOfAdjA = constructTables(a, labelsInA, adjA, locA, locLabelA, whereThis)+1;
+    idxEndOfAdjA = constructTables(a, labelsInA, adjA, adjAsize, locA, locAsize,
+                                   locLabelA, locLabelAsize, whereThis)+1;
     whereThis = genomeB;
-    idxEndOfAdjB = constructTables(b, labelsInB, adjB, locB, locLabelB, whereThis)+1;
-
+    idxEndOfAdjB = constructTables(b, labelsInB, adjB, adjBsize, locB, locBsize,
+                                   locLabelB, locLabelBsize, whereThis)+1;
 }
 
 AdjacencyGraph::~AdjacencyGraph()
@@ -89,18 +90,21 @@ int AdjacencyGraph::maxGene(Genome *g)
  * @returns Número de adjacências
  */
 int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
-        Adjacency *&adj,
-        Location *&loc, LocationLabel *&locLabel,
+        Adjacency *&adj, int &adjacencyTableSize,
+        Location *&loc, int &locSize,
+        LocationLabel *&locLabel, int &locLabelSize,
         WhichGenome whereThis)
 {
     int n = g->numGenes();
-    int adjacencyTableSize = 3*n + 2;
+    adjacencyTableSize = 3*n + 2;
 
     int maxG = maxGene(g);
 
     adj = new Adjacency[adjacencyTableSize]();
-    loc = new Location[maxG+1];
-    locLabel = new LocationLabel[maxG+1];
+    locSize = maxG+1;
+    loc = new Location[locSize];
+    locLabelSize = maxG+1;
+    locLabel = new LocationLabel[locLabelSize];
     int offset = 0;
     int numAdj = totalAdjacencies(g, labels);
 
@@ -131,6 +135,22 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
                 adj[offset+1].label.push_back((*chr)[geneIdx]);
                 ++geneIdx;
             }
+            
+            // ALTEREI:
+            //----------------------------------------------------------------------
+            if(!adj[offset+1].label.empty())
+            {
+                // Preencho o labelAdjWithFirst:
+                adj[offset+1].labelAdjWithFirst.first =
+                        adj[offset+1].label.front();
+                adj[offset+1].labelAdjWithFirst.second = 0;
+
+                // Preencho o labelAdjWithSecond:
+                adj[offset+1].labelAdjWithSecond.first =
+                        -adj[offset+1].label.back();
+                adj[offset+1].labelAdjWithSecond.second = (*chr)[geneIdx];
+            }
+            //----------------------------------------------------------------------
 
             if(geneIdx <= chr->length()) // if it's not a singleton
             {
@@ -147,9 +167,30 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
                     // while this gene is a label...
                     while (geneIdx <= chr->length() &&
                         labels[k].find(abs((*chr)[geneIdx])) != labels[k].end()) {
+
                       adj[offset+numMarkers+1].label.push_back((*chr)[geneIdx]);
                       ++geneIdx;
+
                     }
+
+                    // ALTEREI:
+                    //----------------------------------------------------------------------
+                    if(!adj[offset+numMarkers+1].label.empty())
+                    {
+                        // Preencho o labelAdjWithFirst:
+                        adj[offset+numMarkers+1].labelAdjWithFirst.first =
+                                -adj[offset+numMarkers+1].first;
+                        adj[offset+numMarkers+1].labelAdjWithFirst.second =
+                                adj[offset+numMarkers+1].label.front();
+
+                        // Preencho o labelAdjWithSecond:
+                        adj[offset+numMarkers+1].labelAdjWithSecond.first =
+                                -adj[offset+numMarkers+1].second;
+                        adj[offset+numMarkers+1].labelAdjWithSecond.second =
+                                adj[offset+numMarkers+1].label.back();
+                    }
+                    //----------------------------------------------------------------------
+
                     ++numMarkers;
                     
                     if (geneIdx <= chr->length()) {
@@ -180,22 +221,67 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
                                 // j = index of the last marker
             // while this gene is a label...
             geneIdx = 1;
+
             while (geneIdx <= chr->length() &&
                    labels[k].find(abs((*chr)[geneIdx])) != labels[k].end())
             {
                 adj[offset+1].label.push_back((*chr)[geneIdx]);
                 ++geneIdx;
             }
+
+            // ALTEREI:
+            //----------------------------------------------------------------------
+
+            if(!adj[offset+1].label.empty())
+            {
+                // Preencho o labelAdjWithFirst:
+                adj[offset+1].labelAdjWithFirst.first =
+                        adj[offset+1].second;
+                adj[offset+1].labelAdjWithFirst.second =
+                        adj[offset+1].label.front();
+
+                // Preencho o labelAdjWithSecond:
+                adj[offset+1].labelAdjWithSecond.first =
+                        adj[offset+1].first;
+                adj[offset+1].labelAdjWithSecond.second =
+                        adj[offset+1].label.back();
+            }
+            //----------------------------------------------------------------------
+
             if(geneIdx <= chr->length()) {
+
                 i = geneIdx;
                 // iterate backwards
                 geneIdx = chr->length();
+
                 while (labels[k].find(abs((*chr)[geneIdx])) != labels[k].end())
                 {
                     adj[offset+1].label.push_back((*chr)[geneIdx]);
                     --geneIdx;
                 }
+
                 j = geneIdx;
+
+                // ALTEREI:
+                //----------------------------------------------------------------------
+
+                if(!adj[offset+1].label.empty())
+                {
+                    // Preencho o labelAdjWithSecond:
+                    adj[offset+1].labelAdjWithSecond.first =
+                            adj[offset+1].second;
+                    adj[offset+1].labelAdjWithSecond.second =
+                            -adj[offset+1].label.front();
+
+                    // Preencho o labelAdjWithFirst:
+                    adj[offset+1].labelAdjWithFirst.first =
+                            adj[offset+1].first;
+                    adj[offset+1].labelAdjWithFirst.second =
+                            adj[offset+1].label.back();
+                }
+                //----------------------------------------------------------------------
+
+                
             }
             if (i == -1) // if this chromosome has no markers
             {
@@ -228,11 +314,49 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
                         adj[offset + numMarkers + 1].label.push_back((*chr)[geneIdx]);
                         ++geneIdx;
                     }
+
                     adj[offset + numMarkers + 1].second = (*chr)[geneIdx];
+
+                    // ALTEREI:
+                    //----------------------------------------------------------------------
+
+                    if(!adj[offset+numMarkers+1].label.empty())
+                    {
+                        // Preencho o labelAdjWithSecond:
+                        adj[offset+numMarkers+1].labelAdjWithSecond.first =
+                                adj[offset+numMarkers+1].second;
+                        adj[offset+numMarkers+1].labelAdjWithSecond.second =
+                                -adj[offset+numMarkers+1].label.front();
+
+                        // Preencho o labelAdjWithFirst:
+                        adj[offset+numMarkers+1].labelAdjWithFirst.first =
+                                adj[offset+numMarkers+1].first;
+                        adj[offset+numMarkers+1].labelAdjWithFirst.second =
+                                adj[offset+numMarkers+1].label.back();
+                    }
+                    //----------------------------------------------------------------------
+
                     ++numMarkers;
                 }
                 offset += numMarkers;
             }
+            // ALTEREI:
+            //------------------------------------------------------------------
+            if(!adj[1].label.empty())
+            {
+                // Preencho o labelAdjWithSecond:
+                adj[1].labelAdjWithSecond.first =
+                        adj[1].second;
+                adj[1].labelAdjWithSecond.second =
+                        adj[1].label.front();
+
+                // Preencho o labelAdjWithFirst:
+                adj[1].labelAdjWithFirst.first =
+                        adj[1].first;
+                adj[1].labelAdjWithFirst.second =
+                        -adj[1].label.back();
+            }
+            //------------------------------------------------------------------
 
         } // end else is circular
 
@@ -257,7 +381,7 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
                 for(std::vector<int>::iterator it = adj[i].label.begin();
                         it != adj[i].label.end(); it++)
                 {
-                    locLabel[abs(*it)].positionLabel = i; // Falha de Segmentação
+                    locLabel[abs(*it)].positionLabel = i;
                 }
             }
         }
@@ -282,7 +406,25 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
         std::cout<< adj[i].label << ",";
     }
     std::cout<< "\n";
-/*
+
+    std::cout<< "labelAdjWithFirst: ";
+    for(int i = 1; adj[i].first != END_OF_TABLE; ++i)
+    {
+        std::cout<< "{" << adj[i].labelAdjWithFirst.first << ","
+                << adj[i].labelAdjWithFirst.second << "}" << ";";
+    }
+    std::cout<< "\n";
+
+    std::cout<< "labelAdjWithSecond: ";
+    for(int i = 1; adj[i].first != END_OF_TABLE; ++i)
+    {
+        std::cout<< "{" << adj[i].labelAdjWithSecond.first << ","
+                << adj[i].labelAdjWithSecond.second << "}" << ";";
+    }
+    std::cout<< "\n";
+
+
+    /*
     std::cout<< "Head: ";
     for(int i = 1; i <= 90; ++i)
         std::cout<< loc[i].head << ",";
@@ -306,6 +448,7 @@ int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
     std::cout<< "\n";
     std::cout<< "\n";
 
+    return offset;
 }
 
 /**
@@ -726,6 +869,161 @@ void AdjacencyGraph::printGenome(Genome *g)
         Chromosome *chr = *cIterator;
         std::cout<< *chr << std::endl;
     }
+}
+
+void alterTable(int idxAdj, int idxAdjB, Adjacency* &adj, int &idxEndOfAdj, int &adjSize,
+                Location* &loc, int &locSize, Adjacency* &adjB)
+{
+        adj[idxAdj].first =  adjB[idxAdjB].labelAdjWithFirst.first;
+        adj[idxAdj].second =  adjB[idxAdjB].labelAdjWithFirst.second;
+
+        // Altera tabela de localização
+        if(adj[idxAdj].first > 0)
+            loc[adj[idxAdj].first].tail = idxAdj;
+        else
+            loc[-adj[idxAdj].first].head = idxAdj;
+
+        if(adj[idxAdj].second > 0)
+            loc[adj[idxAdj].second].tail = idxAdj;
+        else
+            loc[-adj[idxAdj].second].head = idxAdj;
+
+        if (idxEndOfAdj >= adjSize) {
+            // acabou o espaço, realocar
+            Adjacency *newAdj = new Adjacency[2*adjSize];
+            memcpy(newAdj, adj, sizeof(Adjacency) * adjSize);
+            adjSize = 2*adjSize;
+            delete adj;
+            adj = newAdj;
+        }
+
+        adj[idxEndOfAdj].first = adjB[idxAdjB].labelAdjWithSecond.first;
+        adj[idxEndOfAdj].second = adjB[idxAdjB].labelAdjWithSecond.second;
+
+        // Altera tabela de localização
+        if(adj[idxEndOfAdj].second > 0)
+            loc[adj[idxEndOfAdj].second].tail = idxEndOfAdj;
+        else
+            loc[-adj[idxEndOfAdj].second].head = idxEndOfAdj;
+
+        if(adj[idxEndOfAdj].first > 0)
+            loc[adj[idxEndOfAdj].first].tail = idxEndOfAdj;
+        else
+            loc[-adj[idxEndOfAdj].first].head = idxEndOfAdj;
+        
+        ++idxEndOfAdj;
+}
+
+/*
+void alterTable(int idxAdj, int label, Adjacency* &adj, int &idxEndOfAdj, int &adjSize,
+                Location* &loc, int &locSize, Adjacency* &adjB) {
+    alterTable(idxAdj, label, adj, idxEndOfAdj, adjSize, loc, locSize);
+
+    adj[idxAdj].first =  adjB[idxAdj].labelAdjWithFirst.first;
+    adj[idxAdj].second =  adjB[idxAdj].labelAdjWithFirst.second;
+
+    adj[idxEndOfAdj].first = adjB[idxAdj].labelAdjWithSecond.first;
+    adj[idxEndOfAdj].second = adjB[idxAdj].labelAdjWithSecond.second;
+}
+*/
+
+/**
+ * Cria uma nova adjacencia nas Tabelas adjA e adjB para as operações:
+ * inserção e substituição
+ */
+void AdjacencyGraph::newAdjacency(int idxAdjA, int idxAdjB)
+{
+    int temp;
+
+    for(std::vector<int>::iterator it = adjB[idxAdjB].label.begin();
+                    it != adjB[idxAdjB].label.end(); it++)
+    {
+        alterTable(idxAdjA, idxAdjB, adjA, idxEndOfAdjA, adjAsize, locA, locAsize, adjB);
+    }
+    adjA[idxAdjA].label.clear();
+
+    // Imprime tabela de adjacencias:
+    // Print
+    std::cout<< "\n";
+    std::cout<< "First: ";
+    for(int i = 1; adjA[i].first != END_OF_TABLE; ++i)
+        std::cout<< adjA[i].first << ",";
+    std::cout<< "\n";
+
+
+    std::cout<< "Second: ";
+    for(int i = 1; adjA[i].first != END_OF_TABLE; ++i)
+        std::cout<< adjA[i].second << ",";
+    std::cout<< "\n";
+
+    std::cout<< "Labels: ";
+    for(int i = 1; adjA[i].first != END_OF_TABLE; ++i)
+    {
+        std::cout<< adjA[i].label << ",";
+    }
+    std::cout<< "\n";
+
+    std::cout<< "labelAdjWithFirst: ";
+    for(int i = 1; adjA[i].first != END_OF_TABLE; ++i)
+    {
+        std::cout<< "{" << adjA[i].labelAdjWithFirst.first << ","
+                << adjA[i].labelAdjWithFirst.second << "}" << ";";
+    }
+    std::cout<< "\n";
+
+    std::cout<< "labelAdjWithSecond: ";
+    for(int i = 1; adjA[i].first != END_OF_TABLE; ++i)
+    {
+        std::cout<< "{" << adjA[i].labelAdjWithSecond.first << ","
+                << adjA[i].labelAdjWithSecond.second << "}" << ";";
+    }
+    std::cout<< "\n";
+
+
+    for(std::vector<int>::iterator it = adjB[idxAdjB].label.begin();
+                    it != adjB[idxAdjB].label.end(); it++)
+    {
+        alterTable(idxAdjB, idxAdjB, adjB, idxEndOfAdjB, adjBsize, locB, locBsize, adjB);
+    }
+    adjB[idxAdjB].label.clear();
+
+    // Imprime Tabela de Adjacencias
+    // Print
+
+    std::cout<< "\n";
+    std::cout<< "First: ";
+    for(int i = 1; adjB[i].first != END_OF_TABLE; ++i)
+        std::cout<< adjB[i].first << ",";
+    std::cout<< "\n";
+
+    std::cout<< "Second: ";
+    for(int i = 1; adjB[i].first != END_OF_TABLE; ++i)
+        std::cout<< adjB[i].second << ",";
+    std::cout<< "\n";
+
+    std::cout<< "Labels: ";
+    for(int i = 1; adjB[i].first != END_OF_TABLE; ++i)
+    {
+        std::cout<< adjB[i].label << ",";
+    }
+    std::cout<< "\n";
+
+    std::cout<< "labelAdjWithFirst: ";
+    for(int i = 1; adjB[i].first != END_OF_TABLE; ++i)
+    {
+        std::cout<< "{" << adjB[i].labelAdjWithFirst.first << ","
+                << adjB[i].labelAdjWithFirst.second << "}" << ";";
+    }
+    std::cout<< "\n";
+
+    std::cout<< "labelAdjWithSecond: ";
+    for(int i = 1; adjB[i].first != END_OF_TABLE; ++i)
+    {
+        std::cout<< "{" << adjB[i].labelAdjWithSecond.first << ","
+                << adjB[i].labelAdjWithSecond.second << "}" << ";";
+    }
+    std::cout<< "\n";
+
 }
 
 int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
@@ -1296,40 +1594,20 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
         }
         else
         {
-            idxU = locA[- p].head;
+            idxU = locA[-p].head;
             u = adjA[idxU];
         }
 
-        tempU.first = u.first;
-        tempU.label.clear();
-        tempU.second = u.second;
-
-        if( (!adjB[i].label.empty()) && (!u.label.empty()) )
+        if( (!adjB[i].label.empty()) && (!adjA[idxU].label.empty()) )
         {
             // Substitution
             Substitution subst;
 
             subst.adj = u;
 
-            for(std::vector<int>::iterator it = adjB[i].label.begin();
-                    it != adjB[i].label.end(); it++)
-            {
-                subst.label.push_back(*it);
-                tempU.label.push_back(*it);
-            }
-
-            // Altero a Tabela AdjA:
-            adjA[idxU] = tempU;
-
-            // Altero a Tabela LocA:
-            for(std::vector<int>::iterator it = adjA[idxU].label.begin();
-                    it != adjA[idxU].label.end(); it++)
-            {
-                locLabelA[abs(*it)].positionLabel = idxU;
-            }
+            newAdjacency(idxU, i);
 
             // Print
-
             subst.print(std::cerr);
 
             Genome *g = adjacencyTableToGenome(adjA, locA);
@@ -1342,29 +1620,14 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
             ++dist;
         }
 
-        if( (!adjB[i].label.empty()) && (u.label.empty()) )
+        if( (!adjB[i].label.empty()) && (adjA[idxU].label.empty()) )
         {
             // Insertion
             Insertion ins;
 
             ins.adj = u;
 
-            for(std::vector<int>::iterator it = adjB[i].label.begin();
-                    it != adjB[i].label.end(); it++)
-            {
-                ins.label.push_back(*it);
-                tempU.label.push_back(*it);
-            }
-
-            // Altero a Tabela AdjA:
-            adjA[idxU] = tempU;
-
-            // Altero a Tabela LocA:
-            for(std::vector<int>::iterator it = adjA[idxU].label.begin();
-                    it != adjA[idxU].label.end(); it++)
-            {
-                locLabelA[abs(*it)].positionLabel = idxU;
-            }
+            newAdjacency(idxU, i);
 
             // Print
 
@@ -1380,12 +1643,17 @@ int AdjacencyGraph::sortByDCJsubst(std::queue<Genome *> &steps,
             ++dist;
         }
 
-        if( (adjB[i].label.empty()) && (!u.label.empty()) )
+        if( (adjB[i].label.empty()) && (!adjA[idxU].label.empty()) )
         {
             // Deletion
             Deletion del;
 
             del.adj = u;
+
+            tempU.first = u.first;
+            tempU.label.clear();
+            tempU.second = u.second;
+
 
             // Altero a Tabela AdjA:
             adjA[idxU] = tempU;
