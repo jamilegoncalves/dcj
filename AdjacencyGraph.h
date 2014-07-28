@@ -80,6 +80,7 @@ class AdjacencyGraph
     LocationLabel *locLabelA, *locLabelB;
     int locLabelAsize, locLabelBsize;
     int idxEndOfAdjA, idxEndOfAdjB;
+    int idxEndOfLocA, idxEndOfLocB;
     int numLabels;
 
     

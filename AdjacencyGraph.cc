@@ -92,8 +92,7 @@ int AdjacencyGraph::maxGene(Genome *g)
 int AdjacencyGraph::constructTables(Genome *g, std::set<int> *labels,
         Adjacency *&adj, int &adjacencyTableSize,
         Location *&loc, int &locSize,
-        LocationLabel *&locLabel, int &locLabelSize,
-        WhichGenome whereThis)
+        LocationLabel *&locLabel, int &locLabelSize, WhichGenome whereThis)
 {
     int n = g->numGenes();
     adjacencyTableSize = 3*n + 2;
@@ -871,8 +870,8 @@ void AdjacencyGraph::printGenome(Genome *g)
     }
 }
 
-void alterTable(int idxAdj, int idxAdjB, Adjacency* &adj, int &idxEndOfAdj, int &adjSize,
-                Location* &loc, int &locSize, Adjacency* &adjB)
+void alterTable(int idxAdj, int idxAdjB, Adjacency* &adj, int &idxEndOfAdj, 
+                int &adjSize, Location* &loc, int &locSize, Adjacency* &adjB)
 {
         adj[idxAdj].first =  adjB[idxAdjB].labelAdjWithFirst.first;
         adj[idxAdj].second =  adjB[idxAdjB].labelAdjWithFirst.second;
@@ -897,6 +896,18 @@ void alterTable(int idxAdj, int idxAdjB, Adjacency* &adj, int &idxEndOfAdj, int 
             adj = newAdj;
         }
 
+        int newIdx = std::max( abs(adjB[idxAdjB].labelAdjWithSecond.first),
+                               abs(adjB[idxAdjB].labelAdjWithSecond.second) );
+        if (newIdx >= locSize) {
+            // acabou o espaço, realocar
+            int newSize = ((newIdx/locSize)+1)*locSize;
+            Location *newLoc = new Location[newSize];
+            memcpy(newLoc, loc, sizeof(Location) * locSize);
+            locSize = newSize;
+            delete loc;
+            loc = newLoc;
+        }
+
         adj[idxEndOfAdj].first = adjB[idxAdjB].labelAdjWithSecond.first;
         adj[idxEndOfAdj].second = adjB[idxAdjB].labelAdjWithSecond.second;
 
@@ -914,18 +925,6 @@ void alterTable(int idxAdj, int idxAdjB, Adjacency* &adj, int &idxEndOfAdj, int 
         ++idxEndOfAdj;
 }
 
-/*
-void alterTable(int idxAdj, int label, Adjacency* &adj, int &idxEndOfAdj, int &adjSize,
-                Location* &loc, int &locSize, Adjacency* &adjB) {
-    alterTable(idxAdj, label, adj, idxEndOfAdj, adjSize, loc, locSize);
-
-    adj[idxAdj].first =  adjB[idxAdj].labelAdjWithFirst.first;
-    adj[idxAdj].second =  adjB[idxAdj].labelAdjWithFirst.second;
-
-    adj[idxEndOfAdj].first = adjB[idxAdj].labelAdjWithSecond.first;
-    adj[idxEndOfAdj].second = adjB[idxAdj].labelAdjWithSecond.second;
-}
-*/
 
 /**
  * Cria uma nova adjacencia nas Tabelas adjA e adjB para as operações:
@@ -938,7 +937,8 @@ void AdjacencyGraph::newAdjacency(int idxAdjA, int idxAdjB)
     for(std::vector<int>::iterator it = adjB[idxAdjB].label.begin();
                     it != adjB[idxAdjB].label.end(); it++)
     {
-        alterTable(idxAdjA, idxAdjB, adjA, idxEndOfAdjA, adjAsize, locA, locAsize, adjB);
+        //alterTable(idxAdjA, idxAdjB, adjA, idxEndOfAdjA, adjAsize,
+          //         locA, locAsize, adjB);
     }
     adjA[idxAdjA].label.clear();
 
@@ -983,7 +983,8 @@ void AdjacencyGraph::newAdjacency(int idxAdjA, int idxAdjB)
     for(std::vector<int>::iterator it = adjB[idxAdjB].label.begin();
                     it != adjB[idxAdjB].label.end(); it++)
     {
-        alterTable(idxAdjB, idxAdjB, adjB, idxEndOfAdjB, adjBsize, locB, locBsize, adjB);
+        //alterTable(idxAdjB, idxAdjB, adjB, idxEndOfAdjB,
+          //         adjBsize, locB, locBsize, adjB);
     }
     adjB[idxAdjB].label.clear();
 
